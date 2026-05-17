@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="landing-page-container">
+    
+    <div class="hero-banner">
+        <div class="hero-content">
+            <h1>Global Health Tracking & Preventable Disease Insights Dashboard</h1>
+            <p>An Evidence-Based Analytical Framework of Immunization Performance</p>
+            
+            <div class="fact-cards-grid">
+                <div class="fact-card">
+                    <div class="card-icon">📅</div>
+                    <div class="card-meta">Temporal Scope</div>
+                    <div class="card-value">{{ timeframe.start }} - {{ timeframe.end }}</div>
+                    <div class="card-desc">Chronological boundaries of system records.</div>
+                </div>
+                
+                <div class="fact-card">
+                    <div class="card-icon">&nbsp;💉</div>
+                    <div class="card-meta">Administered Doses</div>
+                    <div class="card-value">{{ "{:,}".format(total_doses.total or 0) }}</div>
+                    <div class="card-desc">Total vaccine treatments delivered globally.</div>
+                </div>
+                
+                <div class="fact-card">
+                    <div class="card-icon">🔬</div>
+                    <div class="card-meta">Epidemiology Count</div>
+                    <div class="card-value">{{ "{:,}".format(total_cases.total or 0) }}</div>
+                    <div class="card-desc">Documented viral and bacterial outbreaks.</div>
+                </div>
+                
+                <div class="fact-card">
+                    <div class="card-icon">🦠</div>
+                    <div class="card-meta">Disease Profiles</div>
+                    <div class="card-value">{{ distinct_diseases.count }} Pathogens</div>
+                    <div class="card-desc">Distinct disease target tracks in ledger.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="scroll-content">
+        <div class="mission-section">
+            <h2>Mission Overview</h2>
+            <p class="mission-text">
+                The Global Vaccine Impact Database provides transparent, unbiased access to vaccination coverage data across 194 countries from 2000 to 2024. Our mission is to serve as the definitive single source of truth for researchers, policymakers, and health professionals seeking to understand global immunization trends and their impact on public health.
+                <br><br>
+                By integrating vaccination records, infection data, economic indicators, and demographic information, we enable evidence-based analysis of vaccine efficacy, coverage gaps, and the relationship between healthcare access and disease prevention.
+            </p>
+        </div>
+
+        <div class="features-grid">
+            
+            <div class="feature-box">
+                <h3>For Researchers</h3>
+                <p>Access granular data on antigen-specific coverage, zero-dose populations, and epidemiological trends across multiple dimensions.</p>
+                <a href="/improvement" class="feature-link">Explore Antigen Data &rarr;</a>
+            </div>
+
+            <div class="feature-box">
+                <h3>For Policymakers</h3>
+                <p>Compare regional vaccination rates, identify coverage gaps, and understand the economic context of health outcomes.</p>
+                <a href="/regional" class="feature-link">View Regional Analytics &rarr;</a>
+            </div>
+
+            <div class="feature-box">
+                <h3>For Auditors</h3>
+                <p>Verify data integrity, cross-reference population statistics, and ensure reporting accuracy across global datasets.</p>
+                <a href="/integrity" class="feature-link">Check Data Integrity &rarr;</a>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

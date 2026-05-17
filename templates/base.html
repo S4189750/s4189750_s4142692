@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Global Vaccine Impact Explorer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <header>
+        <div class="logo">🌐 Global Vaccine Impact Explorer</div>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/mission">Mission</a>
+            <a href="/regional">Regional Analytics</a>
+            <a href="/economic">Economic Trends</a>
+            <a href="/improvement">Vaccination Progress</a>
+            <a href="/integrity">Data Audit</a>
+        </nav>
+    </header>
+
+    <div class="main-container">
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    <div class="status-footer">
+        ⚙️ System Online | Connected to Live SQLite Database: vaccine_data.db
+    </div>
+
+</body>
+</html>

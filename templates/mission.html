@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="workspace">
+    <h1>Strategic Operational Intent</h1>
+    <p>Our website provides clear, unbiased public health insights to counter vaccine hesitancy and bridge global transparency gaps.</p>
+    
+    <h2>Target Research Personas</h2>
+    <div style="display:grid; gap: 1rem;">
+        {% for p in personas %}
+        <div style="background-color: #1a1a1e; padding: 1rem; border-radius: 6px;">
+            <strong style="color: #38bdf8;">{{ p.PersonaName }}</strong> ({{ p.Role }}) - <em>"{{ p.CoreGoal }}"</em>
+        </div>
+        {% endfor %}
+    </div>
+
+    <h2>Development Team Credentials</h2>
+    <table>
+        <thead>
+            <tr><th>Student Name</th><th>Student ID Number</th></tr>
+        </thead>
+        <tbody>
+            {% for member in team %}
+            <tr><td>{{ member.FullName }}</td><td>{{ member.StudentID }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

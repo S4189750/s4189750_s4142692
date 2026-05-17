@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="sidebar">
+    <h3>Filter Controls</h3>
+    <form method="POST" action="/regional">
+        <div class="form-group">
+            <label>Geographic Region</label>
+            <select name="region">
+                <option value="">-- All World Regions --</option>
+                {% for r in regions %}
+                <option value="{{ r.RegionName }}" {% if sel_region == r.RegionName %}selected{% endif %}>{{ r.RegionName }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Reporting Year</label>
+            <select name="year">
+                <option value="">-- All Years --</option>
+                {% for y in years %}
+                <option value="{{ y.Year }}" {% if sel_year == y.Year %}selected{% endif %}>{{ y.Year }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit">Apply Parameters</button>
+        <a href="/regional"><button type="button" class="clear-btn">Reset Grid</button></a>
+    </form>
+</div>
+
+<div class="workspace">
+    <h2>Regional Immunization Statistics</h2>
+    <table>
+        <thead>
+            <tr><th>Country</th><th>Region</th><th>Antigen Type</th><th>Target Population</th><th>Coverage Metrics</th></tr>
+        </thead>
+        <tbody>
+            {% for row in records %}
+            <tr>
+                <td>{{ row.CountryName }}</td>
+                <td>{{ row.RegionName }}</td>
+                <td>{{ row.Antigen }}</td>
+                <td>{{ "{:,}".format(row.PopulationValue) }}</td>
+                <td>
+                    {% if row.CoveragePercentage < 90 %}
+                    <span class="badge badge-danger">{{ row.CoveragePercentage }}% [Low]</span>
+                    {% else %}
+                    <span class="badge badge-success">{{ row.CoveragePercentage }}% [Safe]</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="sidebar">
+    <h3>Filter Controls</h3>
+    <form method="POST" action="/economic">
+        <div class="form-group">
+            <label>Economic Threshold Status</label>
+            <select name="status">
+                <option value="">-- All Classifications --</option>
+                {% for s in statuses %}
+                <option value="{{ s.EconomicStatus }}" {% if sel_status == s.EconomicStatus %}selected{% endif %}>{{ s.EconomicStatus }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit">Isolate Cohort</button>
+    </form>
+</div>
+
+<div class="workspace">
+    <h2>Epidemiological Tracking Across Economic Status</h2>
+    <table>
+        <thead>
+            <tr><th>Country Name</th><th>Economic Bracket Group</th><th>Infection Classification</th><th>Reported Gross Cases</th></tr>
+        </thead>
+        <tbody>
+            {% for row in records %}
+            <tr>
+                <td>{{ row.CountryName }}</td>
+                <td>{{ row.EconomicStatus }}</td>
+                <td>{{ row.InfectionType }}</td>
+                <td>{{ "{:,}".format(row.ReportedCases) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

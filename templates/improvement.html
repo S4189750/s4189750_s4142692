@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="sidebar">
+    <h3>Analysis Controls</h3>
+    <form method="POST" action="/improvement">
+        <div class="form-group">
+            <label>Antigen Profile</label>
+            <select name="antigen">
+                {% for a in antigens %}
+                <option value="{{ a.Antigen }}" {% if sel_antigen == a.Antigen %}selected{% endif %}>{{ a.Antigen }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group"><label>Baseline Year</label><input type="number" name="start_year" value="{{ sel_start }}"></div>
+        <div class="form-group"><label>Target Year</label><input type="number" name="end_year" value="{{ sel_end }}"></div>
+        <div class="form-group"><label>Return Record Limit</label><input type="number" name="limit" value="{{ limit }}"></div>
+        <button type="submit">Calculate Jump</button>
+    </form>
+</div>
+
+<div class="workspace">
+    <h2>Top Immunization Improvements</h2>
+    <table>
+        <thead>
+            <tr><th>Country Name</th><th>Antigen Target</th><th>Baseline Rate</th><th>Target Rate</th><th>Calculated Progress Net Variance</th></tr>
+        </thead>
+        <tbody>
+            {% for row in records %}
+            <tr>
+                <td>{{ row.CountryName }}</td>
+                <td>{{ row.Antigen }}</td>
+                <td>{{ row.StartCoverage }}%</td>
+                <td>{{ row.EndCoverage }}%</td>
+                <td><strong style="color: #22c55e;">+{{ "%.2f"|format(row.ProgressJump) }}%</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

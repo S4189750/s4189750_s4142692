@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="sidebar">
+    <h3>Audit Scopes</h3>
+    <form method="POST" action="/integrity">
+        <div class="form-group">
+            <label>Fiscal Target Audit Year</label>
+            <select name="year">
+                {% for y in years %}
+                <option value="{{ y.Year }}" {% if sel_year == y.Year %}selected{% endif %}>{{ y.Year }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit">Audit System Files</button>
+    </form>
+</div>
+
+<div class="workspace">
+    <h2>Database Integrity Ledger (Exceeding Global Average Baselines)</h2>
+    
+    <div style="background-color: #27272a; padding: 1rem; border-left: 4px solid #38bdf8; margin-bottom: 1.5rem;">
+        📊 <strong>Calculated Global Baselines:</strong> Average Infection Incidence Rate per 100,000 population for {{ sel_year }} is: 
+        <strong style="color: #38bdf8;">{{ "%.2f"|format(global_avg) }} cases</strong>
+    </div>
+
+    <table>
+        <thead>
+            <tr><th>Country Identity Name</th><th>Infection Class Type</th><th>Reported Gross Cases</th><th>Normalized Cases per 100k</th></tr>
+        </thead>
+        <tbody>
+            {% for row in records %}
+            <tr>
+                <td>{{ row.CountryName }}</td>
+                <td>{{ row.InfectionType }}</td>
+                <td>{{ "{:,}".format(row.ReportedCases) }}</td>
+                <td><span class="badge badge-danger">{{ "%.2f"|format(row.CasesPer100k) }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
