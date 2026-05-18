@@ -1,6 +1,54 @@
 {% extends "base.html" %}
 {% block content %}
 
+<style>
+    .usage-section {
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 2.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+        margin-top: 2rem;
+        margin-bottom: 4rem;
+    }
+    .usage-header {
+        font-size: 2rem;
+        color: #0f172a;
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+    .usage-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+    }
+    .usage-box {
+        background-color: #faf5ff; /* Soft pastel purple box tint */
+        border: 1px solid #e9d5ff;
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .usage-box:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(107, 33, 168, 0.05);
+    }
+    .usage-box h4 {
+        margin-top: 0;
+        margin-bottom: 0.6rem;
+        color: #6b21a8; /* Distinct deep purple text headers */
+        font-size: 1.15rem;
+        font-weight: 700;
+    }
+    .usage-box p {
+        margin: 0;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        color: #5b21b6;
+    }
+</style>
+
 <div class="mission-page-container">
     
     <div class="mission-intro">
@@ -24,6 +72,26 @@
         <div class="value-box box-pastel-purple">
             <h3><strong>Public Health Impact</strong></h3>
             <p>Our ultimate goal is to drive informed decision-making and improve public health outcomes through data-driven insights.</p>
+        </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <div class="usage-section">
+        <h2 class="usage-header"><strong>How to use this website</strong></h2>
+        <div class="usage-grid">
+            <div class="usage-box">
+                <h4>Level 1: Overview</h4>
+                <p>Start with the Landing page and the mission statement to understand the purpose of the platform.</p>
+            </div>
+            <div class="usage-box">
+                <h4>Level 2: Explore</h4>
+                <p>Filter vaccination rates by country or region and examine complex infection data grouped by national economic status.</p>
+            </div>
+            <div class="usage-box">
+                <h4>Level 3: Analysis</h4>
+                <p>Deep-dive into multi-year vaccination improvements and identify specific countries with above-average infection rates.</p>
+            </div>
         </div>
     </div>
 

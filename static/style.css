@@ -147,10 +147,11 @@ nav a:hover {
 .card-pastel-yellow .card-value, .card-pastel-yellow .card-meta { color: #713f12; }
 .card-pastel-yellow .card-desc { color: #ca8a04; }
 
+/* FIXED: Soft light purple dashboard card style */
 .card-pastel-purple {
-    background-color: #f3e8ff;
+    background-color: #f3ebfa;
     color: #6b21a8;
-    border: 1px solid #e9d5ff;
+    border: 1px solid #e1cef0;
 }
 .card-pastel-purple .card-value, .card-pastel-purple .card-meta { color: #581c87; }
 .card-pastel-purple .card-desc { color: #9333ea; }
@@ -335,7 +336,7 @@ nav a:hover {
     margin: 0;
 }
 
-/* Missing Light Purple Box for the Values Grid */
+/* Light Purple Box for the Values Grid */
 .box-pastel-purple {
     background-color: #faf5ff;
     border: 1px solid #f3e8ff;
