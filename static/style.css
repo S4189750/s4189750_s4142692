@@ -1,13 +1,66 @@
-/* Base Layout Resets for New Landing Scheme */
-.landing-page-container {
-    width: 100%;
-    background-color: #ffffff; /* White background for the main canvas area */
+/* Core Layout Configuration */
+body {
+    font-family: 'Inter', Arial, sans-serif;
+    background-color: #ffffff;
+    color: #1e293b;
+    margin: 0;
+    padding: 0;
 }
 
-/* Top Block: Dark Blue Header Segment */
+/* Header Config: Navigation items locked on a single horizontal line */
+header {
+    background-color: #0b1e36;
+    padding: 1.2rem 2.5rem;
+    border-bottom: 1px solid #1e293b;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+.logo {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #ffffff;
+    white-space: nowrap;
+    margin-right: 2rem;
+}
+
+nav {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+nav a {
+    color: #93c5fd;
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+}
+
+nav a:hover {
+    color: #ffffff;
+}
+
+.main-container {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 120px);
+}
+
+/* Dark Blue Hero Banner Area */
+.landing-page-container {
+    width: 100%;
+    background-color: #ffffff;
+}
+
 .hero-banner {
-    background-color: #0b1e36; /* Clean deep Navy Dark Blue styling */
-    padding: 3.5rem 2rem 6rem 2rem;
+    background-color: #0b1e36; 
+    padding: 4rem 2rem 7rem 2rem;
     color: #ffffff;
     text-align: center;
 }
@@ -15,13 +68,8 @@
 .hero-banner h1 {
     font-size: 2.2rem;
     font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-.hero-banner p {
-    color: #93c5fd;
-    font-size: 1.1rem;
-    margin-bottom: 3rem;
+    margin: 0 auto;
+    max-width: 950px;
 }
 
 .hero-content {
@@ -29,76 +77,350 @@
     margin: 0 auto;
 }
 
-/* 4 Grid Fact Cards (White Boxes) floating over the boundary */
+/* Floating 4-Fact Dashboard Grid Layout */
 .fact-cards-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 1.5rem;
-    margin-bottom: -10rem; /* Pulls cards down into the white scroll section below */
+    margin-top: 3.5rem;
+    margin-bottom: -11.5rem; 
 }
 
 .fact-card {
-    background-color: #ffffff;
-    color: #1e293b;
     border-radius: 8px;
     padding: 1.5rem;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.15);
     text-align: left;
-    border: 1px solid #e2e8f0;
+    transition: transform 0.2s ease;
+}
+
+.fact-card:hover {
+    transform: translateY(-4px);
+}
+
+.fact-card .card-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.4rem;
 }
 
 .fact-card .card-meta {
     font-size: 0.75rem;
     text-transform: uppercase;
-    color: #64748b;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
 
 .fact-card .card-value {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #0f172a;
-    margin: 0.5rem 0;
+    font-size: 1.35rem;
+    font-weight: 800;
+    margin: 0.4rem 0;
 }
 
 .fact-card .card-desc {
     font-size: 0.8rem;
-    color: #64748b;
     line-height: 1.4;
+    font-weight: 500;
 }
 
-/* Bottom Scrolling Panel View Setup */
+/* Individual Pastel Color Styles for the 4 Fact Cards */
+.card-pastel-blue {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+}
+.card-pastel-blue .card-value, .card-pastel-blue .card-meta { color: #0c4a6e; }
+.card-pastel-blue .card-desc { color: #0284c7; }
+
+.card-pastel-green {
+    background-color: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}
+.card-pastel-green .card-value, .card-pastel-green .card-meta { color: #14532d; }
+.card-pastel-green .card-desc { color: #16a34a; }
+
+.card-pastel-yellow {
+    background-color: #fef9c3;
+    color: #a16207;
+    border: 1px solid #fef08a;
+}
+.card-pastel-yellow .card-value, .card-pastel-yellow .card-meta { color: #713f12; }
+.card-pastel-yellow .card-desc { color: #ca8a04; }
+
+.card-pastel-purple {
+    background-color: #f3e8ff;
+    color: #6b21a8;
+    border: 1px solid #e9d5ff;
+}
+.card-pastel-purple .card-value, .card-pastel-purple .card-meta { color: #581c87; }
+.card-pastel-purple .card-desc { color: #9333ea; }
+
+/* Scroll Canvas Configuration */
 .scroll-content {
     max-width: 1200px;
-    margin: 14rem auto 4rem auto; /* Creates room for the absolute hanging card rows */
+    margin: 15rem auto 5rem auto; 
     padding: 0 2rem;
-    background-color: #ffffff;
 }
 
-.mission-section {
-    margin-bottom: 4rem;
-}
-
+/* Mission Section Module */
 .mission-section h2 {
     font-size: 2rem;
     color: #0f172a;
-    font-weight: 800; /* Bold Mission Overview title */
-    margin-bottom: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 1.2rem;
 }
 
 .mission-text {
     font-size: 1.1rem;
-    color: #334155; /* Mid-dark gray readable text values */
+    color: #334155;
     line-height: 1.7;
 }
 
-/* 3-Column Profile Box Matrix Layout */
+/* 3 Persona Content Box Layout Matrix */
 .features-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 2rem;
-    margin-top: 2rem;
+    margin-top: 3.5rem;
 }
 
 .feature-box {
-    background-color: #f8fafc; /* Crisp off-white light box
+    border-radius: 8px;
+    padding: 2.2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.feature-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+}
+
+.feature-box h3 {
+    font-size: 1.35rem;
+    margin-top: 0;
+    margin-bottom: 0.85rem;
+    font-weight: 700;
+}
+
+.feature-box p {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+}
+
+/* Individual Pastel Accent Styling for the 3 Subtext Persona Boxes */
+.box-pastel-blue {
+    background-color: #f0f9ff;
+    border: 1px solid #e0f2fe;
+}
+.box-pastel-blue h3, .box-pastel-blue p { color: #0369a1; }
+
+.box-pastel-green {
+    background-color: #f0fdf4;
+    border: 1px solid #dcfce7;
+}
+.box-pastel-green h3, .box-pastel-green p { color: #166534; }
+
+.box-pastel-pink {
+    background-color: #fdf2f8;
+    border: 1px solid #fce7f3;
+}
+.box-pastel-pink h3, .box-pastel-pink p { color: #9d174d; }
+
+/* Dynamic Hyperlink Callouts inside the Pastel textboxes */
+.feature-link {
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1rem;
+    display: inline-block;
+}
+
+.feature-link:hover {
+    text-decoration: underline;
+}
+
+.link-blue { color: #0284c7; }
+.link-green { color: #16a34a; }
+.link-pink { color: #db2777; }
+
+/* Search Filter Module Elements */
+.search-section {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 2rem;
+    border-radius: 8px;
+    margin-bottom: 3rem;
+}
+
+.search-section h2 { font-size: 1.5rem; color: #0f172a; margin-top: 0; }
+.search-form { display: flex; gap: 1rem; margin-top: 1.2rem; }
+.search-form input { flex: 1; padding: 0.75rem 1rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; }
+.search-form button { background-color: #0b1e36; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: 600; cursor: pointer; }
+.search-form button:hover { background-color: #1e3a8a; }
+.search-results-box { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px dashed #cbd5e1; }
+.results-list { list-style: none; padding: 0; }
+.results-list li { padding: 0.5rem 0; font-size: 1rem; color: #0f172a; }
+.clear-search-btn { display: inline-block; margin-top: 1rem; font-size: 0.9rem; color: #64748b; text-decoration: none; }
+.clear-search-btn:hover { text-decoration: underline; }
+.section-divider { border: 0; height: 1px; background: #e2e8f0; margin: 4rem 0; }
+
+/* Global System Status Footer */
+.status-footer {
+    background-color: #0b1e36;
+    border-top: 1px solid #1e293b;
+    color: #94a3b8;
+    text-align: left;
+    padding: 1.2rem 2.5rem;
+    font-size: 0.85rem;
+}
+
+/* =========================================
+   Mission & Team Page Specific Styles
+========================================= */
+
+.mission-page-container {
+    max-width: 1100px;
+    margin: 4rem auto;
+    padding: 0 2rem;
+}
+
+.mission-intro {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.mission-intro h1 {
+    font-size: 2.5rem;
+    color: #0f172a;
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+}
+
+.mission-intro-text {
+    font-size: 1.15rem;
+    color: #334155;
+    line-height: 1.7;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* Core Values 3-Column Grid */
+.values-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-bottom: 4rem;
+}
+
+.value-box {
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.value-box h3 {
+    font-size: 1.3rem;
+    margin-top: 0;
+    margin-bottom: 0.8rem;
+    font-weight: 700;
+}
+
+.value-box p {
+    font-size: 1rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Missing Light Purple Box for the Values Grid */
+.box-pastel-purple {
+    background-color: #faf5ff;
+    border: 1px solid #f3e8ff;
+}
+.box-pastel-purple h3, .box-pastel-purple p {
+    color: #6b21a8;
+}
+
+/* Personas Section */
+.personas-header {
+    text-align: center;
+    font-size: 2.2rem;
+    color: #0f172a;
+    font-weight: 800;
+    margin-bottom: 3rem;
+}
+
+.personas-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2.5rem;
+    margin-bottom: 5rem;
+}
+
+/* Flexbox layout to put the image and text side-by-side */
+.persona-card {
+    display: flex;
+    align-items: center; /* Vertically centers the image with the text */
+    gap: 2rem;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+}
+
+/* Personas Photo Fix for Vertical Images */
+.persona-photo {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    object-fit: cover; /* IMPORTANT: This crops vertical pics to fit the circle perfectly */
+    border: 4px solid #ffffff;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+}
+
+/* Team Members Section Styles */
+.team-header {
+    text-align: center;
+    font-size: 2.2rem;
+    color: #0f172a;
+    margin-bottom: 3rem;
+}
+
+.team-grid {
+    display: flex;
+    justify-content: center; /* Centers the two members */
+    gap: 6rem; /* Space between you and your teammate */
+    margin-bottom: 5rem;
+}
+
+.team-member {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.team-photo {
+    width: 180px; /* Larger size for team members */
+    height: 180px;
+    border-radius: 50%;
+    object-fit: cover; /* Fixes vertical stretching */
+    border: 5px solid #ffffff;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+}
+
+/* Small light purple label box */
+.team-label {
+    background-color: #f3e8ff; /* Light Pastel Purple */
+    color: #6b21a8; /* Deep Purple text */
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: 1px solid #e9d5ff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}

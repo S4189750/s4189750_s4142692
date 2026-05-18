@@ -1,28 +1,78 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="workspace">
-    <h1>Strategic Operational Intent</h1>
-    <p>Our website provides clear, unbiased public health insights to counter vaccine hesitancy and bridge global transparency gaps.</p>
+
+<div class="mission-page-container">
     
-    <h2>Target Research Personas</h2>
-    <div style="display:grid; gap: 1rem;">
-        {% for p in personas %}
-        <div style="background-color: #1a1a1e; padding: 1rem; border-radius: 6px;">
-            <strong style="color: #38bdf8;">{{ p.PersonaName }}</strong> ({{ p.Role }}) - <em>"{{ p.CoreGoal }}"</em>
-        </div>
-        {% endfor %}
+    <div class="mission-intro">
+        <h1>Mission & Target Audience</h1>
+        <p class="mission-intro-text">
+            The Global Vaccine Impact Database was created to address a critical gap in accessible, trustworthy global health information. In an era of information overload and conflicting narratives, we provide an empirical source of truth for vaccination milestones spanning 194 countries.
+            <br><br>
+            We serve diverse users—from concerned citizens seeking basic macro metrics to researchers conducting thorough epidemiological analysis—by implementing structural relational schema designs and intuitive analytical query portals.
+        </p>
     </div>
 
-    <h2>Development Team Credentials</h2>
-    <table>
-        <thead>
-            <tr><th>Student Name</th><th>Student ID Number</th></tr>
-        </thead>
-        <tbody>
-            {% for member in team %}
-            <tr><td>{{ member.FullName }}</td><td>{{ member.StudentID }}</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="values-grid">
+        <div class="value-box box-pastel-blue">
+            <h3><strong>Structural Transparency</strong></h3>
+            <p>All database records map cleanly across regional, temporal, and economic dimensions without convoluted processing pipelines.</p>
+        </div>
+        <div class="value-box box-pastel-green">
+            <h3><strong>Unbiased Reporting</strong></h3>
+            <p>We present raw global data configurations derived directly from audited records, helping users bypass editorialized summaries.</p>
+        </div>
+        <div class="value-box box-pastel-purple">
+            <h3><strong>Public Health Impact</strong></h3>
+            <p>Our ultimate goal is to drive informed decision-making and improve public health outcomes through data-driven insights.</p>
+        </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <h2 class="personas-header">Target System Personas</h2>
+    
+    <div class="personas-grid">
+        <div class="persona-card box-pastel-pink">
+            <img src="{{ url_for('static', filename='images/marie.jpeg') }}" alt="Marie Jose" class="persona-photo">
+            <div class="persona-info">
+                <h3>Marie Jose</h3>
+                <p><strong>System Profile:</strong> Level 1 User (General Audience)</p>
+                <p><strong>Demographics:</strong> 35-year-old Parent / Concerned Civilian</p>
+                <p><strong>Technical Comfort:</strong> Moderate. Uses mobile dashboards daily.</p>
+                <p><strong>Core Objective:</strong> Needs to quickly verify active tracking timelines and overall global case baselines.</p>
+                <p><strong>System Pain Points:</strong> Finds dry database text files confusing and gets overwhelmed by unstructured schemas.</p>
+            </div>
+        </div>
+
+        <div class="persona-card box-pastel-blue">
+            <img src="{{ url_for('static', filename='images/derek.jpeg') }}" alt="Derek Nguyen" class="persona-photo">
+            <div class="persona-info">
+                <h3>Derek Nguyen</h3>
+                <p><strong>System Profile:</strong> Level 2/3 User (Deep Data Analyst)</p>
+                <p><strong>Demographics:</strong> 28-year-old Public Health Researcher</p>
+                <p><strong>Technical Comfort:</strong> High. Very confident using SQL statements, parameters, and query scripts.</p>
+                <p><strong>Core Objective:</strong> Wants to evaluate detailed performance metrics across specific World Bank economic categories.</p>
+                <p><strong>System Pain Points:</strong> Annoyed when datasets lock metrics behind rigid aggregations without filter options.</p>
+            </div>
+        </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <h2 class="team-header"><strong>Team Members</strong></h2>
+    
+    <div class="team-grid">
+        <div class="team-member">
+            <img src="{{ url_for('static', filename='images/hiya.jpeg') }}" alt="Hiya Rana" class="team-photo">
+            <div class="team-label">Hiya Rana, s4142692</div>
+        </div>
+
+        <div class="team-member">
+            <img src="{{ url_for('static', filename='images/bach.jpeg') }}" alt="Bach Nguyen Ho Viet" class="team-photo">
+            <div class="team-label">Bach Nguyen Ho Viet, s4189750</div>
+        </div>
+    </div>
+
 </div>
+
 {% endblock %}

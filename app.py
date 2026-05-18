@@ -7,7 +7,7 @@ DB_FILE = "immunisation.db"
 def query_db(query, args=(), one=False):
     """Helper function to cleanly open, execute, and pull data rows from SQLite."""
     conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row  # Enables column access by column name strings
+    conn.row_factory = sqlite3.Row  
     cur = conn.cursor()
     cur.execute(query, args)
     rv = cur.fetchall()
@@ -15,49 +15,56 @@ def query_db(query, args=(), one=False):
     return (rv[0] if rv else None) if one else rv
 
 # ==========================================
-# LEVEL 1 ROUTES: Big Picture Summary Metrics
+# LEVEL 1 ROUTES: Dashboard & Metrics
 # ==========================================
 
 @app.route('/')
 def index():
-    # Requirement: 4 facts/snapshot metrics pulled live using SQL Aggregations
     timeframe = query_db("SELECT MIN(Year) as start, MAX(Year) as end FROM VaccinationData;", one=True)
     total_doses = query_db("SELECT SUM(DosesAdministered) as total FROM VaccinationData;", one=True)
-    total_cases = query_db("SELECT SUM(cases) as total FROM InfectionData;", one=True)
-    distinct_diseases = query_db("SELECT COUNT(DISTINCT inf_type) as count FROM InfectionData;", one=True)
+    total_cases = query_db("SELECT SUM(ReportedCases) as total FROM InfectionData;", one=True)
+    distinct_diseases = query_db("SELECT COUNT(DISTINCT InfectionType) as count FROM InfectionData;", one=True)
     
+    search_query = request.args.get('disease_search', '').strip()
+    search_results = []
+    
+    if search_query:
+        results_raw = query_db(
+            "SELECT DISTINCT InfectionType FROM InfectionData WHERE InfectionType LIKE ?;", 
+            ['%' + search_query + '%']
+        )
+        search_results = [row['InfectionType'] for row in results_raw]
+
     return render_template('index.html', 
                            timeframe=timeframe, 
                            total_doses=total_doses, 
                            total_cases=total_cases, 
-                           distinct_diseases=distinct_diseases)
+                           distinct_diseases=distinct_diseases,
+                           search_query=search_query,
+                           search_results=search_results)
 
 @app.route('/mission')
 def mission():
-    # Requirement: Pull team profile records and target group personas from the database
-    team = query_db("SELECT * FROM TeamMembers ORDER BY StudentID ASC;")
-    personas = query_db("SELECT * FROM Personas;")
-    return render_template('mission.html', team=team, personas=personas)
+    # Renders the static pastel blocks and target personas profile layout safely
+    return render_template('mission.html')
 
 # ==========================================
-# LEVEL 2 ROUTES: Filtering & Shallow Glances
+# LEVEL 2 ROUTES: Filtering Views
 # ==========================================
 
 @app.route('/regional', methods=['GET', 'POST'])
 def regional():
-    # Populate dropdown filter selections directly from unique database records
     regions = query_db("SELECT DISTINCT RegionName FROM Countries WHERE RegionName IS NOT NULL;")
     years = query_db("SELECT DISTINCT Year FROM VaccinationData ORDER BY Year DESC;")
     
     selected_region = request.form.get('region') if request.method == 'POST' else None
     selected_year = request.form.get('year') if request.method == 'POST' else None
     
-    # Base Raw SQL Query demonstrating dynamic structural joins & user-input filtering
     query = """
-        SELECT c.CountryName, c.RegionName, v.Antigen, p.population, v.DosesAdministered, v.CoveragePercentage, v.Year
+        SELECT c.CountryName, c.RegionName, v.Antigen, p.PopulationValue, v.DosesAdministered, v.CoveragePercentage, v.Year
         FROM VaccinationData v
         JOIN Countries c ON v.CountryID = c.CountryID
-        JOIN CountryPopulation p ON v.CountryID = p.country AND v.Year = p.year
+        JOIN CountryPopulation p ON v.CountryID = p.CountryID AND v.Year = p.Year
         WHERE 1=1
     """
     params = []
@@ -66,9 +73,9 @@ def regional():
         params.append(selected_region)
     if selected_year:
         query += " AND v.Year = ?"
-        params.append(selected_year)
+        params.append(int(selected_year) if selected_year.isdigit() else selected_year)
         
-    query += " ORDER BY v.CoveragePercentage DESC;"
+    query += " ORDER BY v.CoveragePercentage DESC LIMIT 100;"
     records = query_db(query, params)
     
     return render_template('regional.html', regions=regions, years=years, 
@@ -80,15 +87,15 @@ def economic():
     selected_status = request.form.get('status') if request.method == 'POST' else None
     
     query = """
-        SELECT c.CountryName, c.EconomicStatus, i.inf_type, i.cases, i.year
+        SELECT c.CountryName, c.EconomicStatus, i.InfectionType, i.ReportedCases, i.Year
         FROM InfectionData i
-        JOIN Countries c ON i.country = c.CountryID
+        JOIN Countries c ON i.CountryID = c.CountryID
     """
     params = []
     if selected_status:
         query += " WHERE c.EconomicStatus = ?"
         params.append(selected_status)
-    query += " ORDER BY i.cases DESC LIMIT 100;"
+    query += " ORDER BY i.ReportedCases DESC LIMIT 100;"
     
     records = query_db(query, params)
     return render_template('economic.html', statuses=statuses, records=records, sel_status=selected_status)
@@ -100,13 +107,11 @@ def economic():
 @app.route('/improvement', methods=['GET', 'POST'])
 def improvement():
     antigens = query_db("SELECT DISTINCT Antigen FROM VaccinationData;")
-    
     sel_antigen = request.form.get('antigen', 'DTP3')
     sel_start = request.form.get('start_year', '2020')
-    sel_end = request.form.get('end_year', '2024')
+    sel_end = request.form.get('end_year', '2022')
     limit_n = request.form.get('limit', '10')
     
-    # Complex Level 3 Query: Compares performance metrics over time purely using SQL logic
     query = """
         SELECT v1.CountryID, c.CountryName, v1.Antigen,
                v1.CoveragePercentage as StartCoverage, 
@@ -119,41 +124,38 @@ def improvement():
         ORDER BY ProgressJump DESC
         LIMIT ?;
     """
-    records = query_db(query, [sel_antigen, sel_start, sel_end, int(limit_n)])
+    records = query_db(query, [sel_antigen, int(sel_start), int(sel_end), int(limit_n)])
     return render_template('improvement.html', antigens=antigens, records=records,
                            sel_antigen=sel_antigen, sel_start=sel_start, sel_end=sel_end, limit=limit_n)
 
 @app.route('/integrity', methods=['GET', 'POST'])
 def integrity():
-    years = query_db("SELECT DISTINCT year FROM InfectionData ORDER BY year DESC;")
+    years = query_db("SELECT DISTINCT Year FROM InfectionData ORDER BY Year DESC;")
     sel_year = request.form.get('year', '2020')
     
-    # CRITICAL LEVEL 3 RULES: Calculates an aggregated global average inside a subquery, 
-    # then exposes records that exceed that average baseline. No Python filtering used.
     query = """
-        SELECT c.CountryName, i.inf_type, i.cases, i.year,
-               ((i.cases * 100000.0) / cp.population) as CasesPer100k
+        SELECT c.CountryName, i.InfectionType, i.ReportedCases, i.Year,
+               ((i.ReportedCases * 100000.0) / cp.PopulationValue) as CasesPer100k
         FROM InfectionData i
-        JOIN Countries c ON i.country = c.CountryID
-        JOIN CountryPopulation cp ON i.country = cp.country AND i.year = cp.year
-        WHERE i.year = ? 
-        AND ((i.cases * 100000.0) / cp.population) > (
-            SELECT AVG((sub_i.cases * 100000.0) / sub_cp.population)
+        JOIN Countries c ON i.CountryID = c.CountryID
+        JOIN CountryPopulation cp ON i.CountryID = cp.CountryID AND i.Year = cp.Year
+        WHERE i.Year = ? 
+        AND ((i.ReportedCases * 100000.0) / cp.PopulationValue) > (
+            SELECT AVG((sub_i.ReportedCases * 100000.0) / sub_cp.PopulationValue)
             FROM InfectionData sub_i
-            JOIN CountryPopulation sub_cp ON sub_i.country = sub_cp.country AND sub_i.year = sub_cp.year
-            WHERE sub_i.year = ?
+            JOIN CountryPopulation sub_cp ON sub_i.CountryID = sub_cp.CountryID AND sub_i.Year = sub_cp.Year
+            WHERE sub_i.Year = ?
         )
         ORDER BY CasesPer100k DESC;
     """
-    records = query_db(query, [sel_year, sel_year])
+    records = query_db(query, [int(sel_year), int(sel_year)])
     
-    # Calculate the standalone global average baseline for display at the top of the table
     avg_row = query_db("""
-        SELECT AVG((sub_i.cases * 100000.0) / sub_cp.population) as global_avg
+        SELECT AVG((sub_i.ReportedCases * 100000.0) / sub_cp.PopulationValue) as global_avg
         FROM InfectionData sub_i
-        JOIN CountryPopulation sub_cp ON sub_i.country = sub_cp.country AND sub_i.year = sub_cp.year
-        WHERE sub_i.year = ?;
-    """, [sel_year], one=True)
+        JOIN CountryPopulation sub_cp ON sub_i.CountryID = sub_cp.CountryID AND sub_i.Year = sub_cp.Year
+        WHERE sub_i.Year = ?;
+    """, [int(sel_year)], one=True)
     
     return render_template('integrity.html', years=years, records=records, 
                            sel_year=sel_year, global_avg=avg_row['global_avg'] if avg_row else 0)
