@@ -18,14 +18,14 @@
                 <div class="fact-card card-pastel-green">
                     <div class="card-icon">💉</div>
                     <div class="card-meta">Administered Doses</div>
-                    <div class="card-value">{{ "{:,}".format(total_doses.total or 0) }}</div>
+                    <div class="card-value">{{ "{:,}".format(int(total_doses.total or 0)) }}</div>
                     <div class="card-desc">Total vaccine treatments delivered and tracked globally.</div>
                 </div>
                 
                 <div class="fact-card card-pastel-yellow">
                     <div class="card-icon">🔬</div>
                     <div class="card-meta">Epidemiology Count</div>
-                    <div class="card-value">{{ "{:,}".format(total_cases.total or 0) }}</div>
+                    <div class="card-value">{{ "{:,}".format(int(total_cases.total or 0)) }}</div>
                     <div class="card-desc">Documented viral and bacterial pathogen outbreaks.</div>
                 </div>
                 

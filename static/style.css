@@ -147,13 +147,14 @@ nav a:hover {
 .card-pastel-yellow .card-value, .card-pastel-yellow .card-meta { color: #713f12; }
 .card-pastel-yellow .card-desc { color: #ca8a04; }
 
+/* Updated Lighter Pastel Purple */
 .card-pastel-purple {
-    background-color: #ceb1ed;
-    color: #8e6daa;
-    border: 1px solid #cba7f1;
+    background-color: #f3e8ff; /* Lighter background */
+    color: #6b21a8;            /* Keep text readable */
+    border: 1px solid #e9d5ff; /* Lighter border */
 }
 .card-pastel-purple .card-value, .card-pastel-purple .card-meta { color: #581c87; }
-.card-pastel-purple .card-desc { color: #9333ea; }
+.card-pastel-purple .card-desc { color: #7e22ce; }
 
 /* Scroll Canvas Configuration */
 .scroll-content {
@@ -335,13 +336,18 @@ nav a:hover {
     margin: 0;
 }
 
-/* Missing Light Purple Box for the Values Grid */
-.box-pastel-purple {
-    background-color: #faf5ff;
-    border: 1px solid #f3e8ff;
+/* New Baby Yellow Box Style for Mission Page */
+.box-baby-yellow {
+    background-color: #fef9c3; /* Soft baby yellow */
+    border: 1px solid #fef08a; /* Slightly darker yellow border */
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
-.box-pastel-purple h3, .box-pastel-purple p {
-    color: #6b21a8;
+
+.box-baby-yellow h3, 
+.box-baby-yellow p { 
+    color: #854d0e; /* Darker golden-brown for readability */
 }
 
 /* Personas Section */
