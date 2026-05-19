@@ -1,54 +1,423 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="sidebar">
-    <h3>Filter Controls</h3>
-    <form method="POST" action="/regional">
-        <div class="form-group">
-            <label>Geographic Region</label>
-            <select name="region">
-                <option value="">-- All World Regions --</option>
-                {% for r in regions %}
-                <option value="{{ r.RegionName }}" {% if sel_region == r.RegionName %}selected{% endif %}>{{ r.RegionName }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="form-group">
-            <label>Reporting Year</label>
-            <select name="year">
-                <option value="">-- All Years --</option>
-                {% for y in years %}
-                <option value="{{ y.Year }}" {% if sel_year == y.Year %}selected{% endif %}>{{ y.Year }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <button type="submit">Apply Parameters</button>
-        <a href="/regional"><button type="button" class="clear-btn">Reset Grid</button></a>
-    </form>
+
+<style>
+/* ── Page hero ── */
+.regional-hero {
+    background: linear-gradient(135deg, #0b5c3a 0%, #0e7c50 60%, #16a34a 100%);
+    padding: 3rem 2.5rem 2.5rem;
+    color: #fff;
+}
+.regional-hero h1 { margin: 0 0 0.4rem; font-size: 2rem; font-weight: 800; }
+.regional-hero p  { margin: 0; opacity: .85; font-size: 1rem; }
+
+/* ── Two-column layout ── */
+.regional-body {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 2rem;
+    max-width: 1300px;
+    margin: 2rem auto;
+    padding: 0 2rem;
+    align-items: start;
+}
+
+/* ── Sidebar ── */
+.regional-sidebar {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    position: sticky;
+    top: 1.5rem;
+}
+.sidebar-title {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 1.4rem;
+}
+.form-group { margin-bottom: 1.1rem; }
+.form-group label {
+    display: block;
+    font-size: .78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: #64748b;
+    margin-bottom: .4rem;
+}
+.form-group select {
+    width: 100%;
+    padding: .55rem .8rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    font-size: .93rem;
+    color: #0f172a;
+    background: #f8fafc;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right .75rem center;
+    cursor: pointer;
+}
+.btn-apply {
+    width: 100%;
+    padding: .65rem;
+    background: #0b5c3a;
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    font-weight: 700;
+    font-size: .95rem;
+    cursor: pointer;
+    margin-top: .5rem;
+    transition: background .2s;
+}
+.btn-apply:hover { background: #0e7c50; }
+.btn-reset {
+    width: 100%;
+    padding: .55rem;
+    background: transparent;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    font-size: .88rem;
+    cursor: pointer;
+    margin-top: .6rem;
+    transition: background .2s;
+}
+.btn-reset:hover { background: #f1f5f9; }
+
+/* ── Sidebar stat card ── */
+.stat-card {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 1rem 1.1rem;
+    margin-top: 1.4rem;
+    text-align: center;
+}
+.stat-card .stat-label { font-size: .75rem; font-weight: 700; color: #15803d; text-transform: uppercase; letter-spacing: .5px; }
+.stat-card .stat-value { font-size: 2rem; font-weight: 900; color: #166534; margin: .25rem 0 .1rem; }
+.stat-card .stat-sub   { font-size: .82rem; color: #16a34a; }
+
+/* ── Main workspace ── */
+.regional-workspace { min-width: 0; }
+
+/* ── Section cards ── */
+.section-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.5rem 1.8rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    margin-bottom: 2rem;
+}
+.section-card-header { margin: 0 0 .35rem; }
+.section-card-header h2 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 .2rem;
+}
+.section-card-header p  { font-size: .85rem; color: #64748b; margin: 0; }
+
+/* ── Tables ── */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    font-size: .88rem;
+}
+.data-table thead tr {
+    background: #f8fafc;
+    border-bottom: 2px solid #e2e8f0;
+}
+.data-table th {
+    text-align: left;
+    padding: .65rem 1rem;
+    font-size: .73rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: #64748b;
+    white-space: nowrap;
+}
+.data-table td {
+    padding: .6rem 1rem;
+    color: #334155;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+.data-table tbody tr:hover { background: #f8fafc; }
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+/* ── Coverage badge ── */
+.badge-coverage {
+    display: inline-block;
+    padding: .2rem .55rem;
+    border-radius: 20px;
+    font-size: .82rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.badge-high   { background: #dcfce7; color: #166534; }
+.badge-mid    { background: #fef9c3; color: #713f12; }
+.badge-low    { background: #fee2e2; color: #991b1b; }
+
+/* ── Region count pill ── */
+.pill-count {
+    display: inline-block;
+    background: #dbeafe;
+    color: #1e40af;
+    padding: .15rem .6rem;
+    border-radius: 20px;
+    font-size: .82rem;
+    font-weight: 700;
+}
+
+/* ── Mini progress bar inside table 2 ── */
+.progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+.progress-bar-bg {
+    flex: 1;
+    background: #f1f5f9;
+    border-radius: 6px;
+    height: 8px;
+    overflow: hidden;
+    min-width: 60px;
+}
+.progress-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #16a34a, #22c55e);
+    transition: width .4s ease;
+}
+.progress-pct { font-size: .82rem; font-weight: 700; color: #15803d; min-width: 36px; text-align: right; }
+
+/* ── Empty state ── */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #94a3b8;
+    font-size: .95rem;
+}
+.empty-state span { font-size: 2rem; display: block; margin-bottom: .5rem; }
+
+/* ── Country pin icon ── */
+.pin-icon { color: #94a3b8; margin-right: .35rem; font-size: .9rem; }
+
+/* ── Active filter tag ── */
+.filter-tags { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.2rem; }
+.filter-tag {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+    border-radius: 20px;
+    padding: .2rem .7rem;
+    font-size: .8rem;
+    font-weight: 600;
+}
+</style>
+
+<!-- ── Hero ── -->
+<div class="regional-hero">
+    <h1>Regional Vaccination Analytics</h1>
+    <p>Compare vaccination coverage across regions and time periods</p>
 </div>
 
-<div class="workspace">
-    <h2>Regional Immunization Statistics</h2>
-    <table>
-        <thead>
-            <tr><th>Country</th><th>Region</th><th>Antigen Type</th><th>Target Population</th><th>Coverage Metrics</th></tr>
-        </thead>
-        <tbody>
-            {% for row in records %}
-            <tr>
-                <td>{{ row.CountryName }}</td>
-                <td>{{ row.RegionName }}</td>
-                <td>{{ row.Antigen }}</td>
-                <td>{{ "{:,}".format(row.PopulationValue) }}</td>
-                <td>
-                    {% if row.CoveragePercentage < 90 %}
-                    <span class="badge badge-danger">{{ row.CoveragePercentage }}% [Low]</span>
-                    {% else %}
-                    <span class="badge badge-success">{{ row.CoveragePercentage }}% [Safe]</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+<!-- ── Body ── -->
+<div class="regional-body">
+
+    <!-- SIDEBAR -->
+    <aside class="regional-sidebar">
+        <div class="sidebar-title">🔽 Filters</div>
+
+        <form method="POST" action="/regional">
+
+            <div class="form-group">
+                <label>Region</label>
+                <select name="region">
+                    <option value="">All Regions</option>
+                    {% for r in regions %}
+                    <option value="{{ r.RegionName }}" {% if sel_region == r.RegionName %}selected{% endif %}>
+                        {{ r.RegionName }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Year</label>
+                <select name="year">
+                    {% for y in years %}
+                    <option value="{{ y.Year }}" {% if sel_year == y.Year|string %}selected{% endif %}>
+                        {{ y.Year }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Vaccine Type</label>
+                <select name="antigen">
+                    {% for a in antigens %}
+                    <option value="{{ a.Antigen }}" {% if sel_antigen == a.Antigen %}selected{% endif %}>
+                        {{ a.Antigen }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button type="submit" class="btn-apply">Apply Filters</button>
+            <a href="/regional"><button type="button" class="btn-reset">Reset</button></a>
+        </form>
+
+        {% if stats %}
+        <div class="stat-card">
+            <div class="stat-label">Average Coverage</div>
+            <div class="stat-value">{{ stats.AvgCoverage }}%</div>
+            <div class="stat-sub">{{ stats.TotalCountries }} countries</div>
+        </div>
+        {% endif %}
+    </aside>
+
+    <!-- WORKSPACE -->
+    <div class="regional-workspace">
+
+        <!-- Active filter tags -->
+        <div class="filter-tags">
+            <span class="filter-tag">📅 {{ sel_year }}</span>
+            <span class="filter-tag">💉 {{ sel_antigen }}</span>
+            {% if sel_region %}<span class="filter-tag">🌍 {{ sel_region }}</span>{% endif %}
+        </div>
+
+        <!-- ── TABLE 1 ── -->
+        <div class="section-card">
+            <div class="section-card-header">
+                <h2>Table 1 — Countries Meeting ≥ 90% Vaccination Target</h2>
+                <p>
+                    {{ table1|length }} countr{{ 'y' if table1|length == 1 else 'ies' }}
+                    met the 90% threshold for <strong>{{ sel_antigen }}</strong>
+                    in <strong>{{ sel_year }}</strong>
+                    {% if sel_region %}within <strong>{{ sel_region }}</strong>{% endif %}
+                </p>
+            </div>
+
+            {% if table1 %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Country</th>
+                        <th>Region</th>
+                        <th>Antigen</th>
+                        <th>Year</th>
+                        <th>Coverage %</th>
+                        <th>Doses Given</th>
+                        <th>Target Pop.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in table1 %}
+                    <tr>
+                        <td><span class="pin-icon">📍</span>{{ row.CountryName }}</td>
+                        <td>{{ row.RegionName }}</td>
+                        <td>{{ row.Antigen }}</td>
+                        <td>{{ row.Year }}</td>
+                        <td>
+                            {% set pct = row.CoveragePct %}
+                            {% if pct >= 95 %}
+                                <span class="badge-coverage badge-high">{{ pct }}%</span>
+                            {% elif pct >= 90 %}
+                                <span class="badge-coverage badge-mid">{{ pct }}%</span>
+                            {% else %}
+                                <span class="badge-coverage badge-low">{{ pct }}%</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ "{:,}".format(row.DosesAdministered) if row.DosesAdministered else '—' }}</td>
+                        <td>{{ "{:,}".format(row.TargetPop) if row.TargetPop else '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <span>🔍</span>
+                No countries met the 90% threshold for {{ sel_antigen }} in {{ sel_year }}
+                {% if sel_region %}in {{ sel_region }}{% endif %}.
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ── TABLE 2 ── -->
+        <div class="section-card">
+            <div class="section-card-header">
+                <h2>Table 2 — Countries Meeting ≥ 90% Target, by Region</h2>
+                <p>
+                    Regional summary for <strong>{{ sel_antigen }}</strong> in <strong>{{ sel_year }}</strong>
+                    {% if sel_region %}(filtered to <strong>{{ sel_region }}</strong>){% endif %}
+                </p>
+            </div>
+
+            {% if table2 %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Region</th>
+                        <th>Antigen</th>
+                        <th>Year</th>
+                        <th>Countries ≥ 90%</th>
+                        <th>Avg Coverage</th>
+                        <th>Coverage Spread</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in table2 %}
+                    <tr>
+                        <td>🌍 {{ row.RegionName }}</td>
+                        <td>{{ row.Antigen }}</td>
+                        <td>{{ row.Year }}</td>
+                        <td><span class="pill-count">{{ row.CountriesAt90 }} / {{ row.CountriesMet }}</span></td>
+                        <td>
+                            {% set avg = row.AvgCoverage %}
+                            {% if avg >= 90 %}
+                                <span class="badge-coverage badge-high">{{ avg }}%</span>
+                            {% elif avg >= 75 %}
+                                <span class="badge-coverage badge-mid">{{ avg }}%</span>
+                            {% else %}
+                                <span class="badge-coverage badge-low">{{ avg }}%</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="progress-wrap">
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill"
+                                         style="width: {{ [row.AvgCoverage, 100]|min }}%"></div>
+                                </div>
+                                <span class="progress-pct">{{ row.AvgCoverage }}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <span>📊</span>
+                No regional data available for this selection.
+            </div>
+            {% endif %}
+        </div>
+
+    </div><!-- /workspace -->
+</div><!-- /body -->
+
 {% endblock %}

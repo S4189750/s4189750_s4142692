@@ -1,37 +1,615 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="sidebar">
-    <h3>Filter Controls</h3>
-    <form method="POST" action="/economic">
-        <div class="form-group">
-            <label>Economic Threshold Status</label>
-            <select name="status">
-                <option value="">-- All Classifications --</option>
-                {% for s in statuses %}
-                <option value="{{ s.EconomicStatus }}" {% if sel_status == s.EconomicStatus %}selected{% endif %}>{{ s.EconomicStatus }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <button type="submit">Isolate Cohort</button>
-    </form>
+
+<style>
+/* ── Hero ── */
+.eco-hero {
+    background: linear-gradient(135deg, #7f1d1d 0%, #b91c1c 60%, #dc2626 100%);
+    padding: 3rem 2.5rem 2.5rem;
+    color: #fff;
+}
+.eco-hero h1 { margin: 0 0 .4rem; font-size: 2rem; font-weight: 800; }
+.eco-hero p  { margin: 0; opacity: .85; font-size: 1rem; }
+
+/* ── Page body ── */
+.eco-body {
+    max-width: 1300px;
+    margin: 2rem auto;
+    padding: 0 2rem;
+}
+
+/* ── Research finding banner ── */
+.finding-banner {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-left: 4px solid #0284c7;
+    border-radius: 8px;
+    padding: 1.1rem 1.4rem;
+    margin-bottom: 2rem;
+}
+.finding-banner strong { display: block; color: #0c4a6e; margin-bottom: .3rem; font-size: .95rem; }
+.finding-banner p { margin: 0; color: #0369a1; font-size: .88rem; line-height: 1.6; }
+
+/* ── Global filter bar ── */
+.global-filters {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.2rem 1.5rem;
+    margin-bottom: 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+.global-filters h3 { grid-column: 1/-1; margin: 0 0 .5rem; font-size: .85rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .5px; }
+.filter-row { display: flex; flex-direction: column; gap: .3rem; }
+.filter-row label { font-size: .75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .4px; }
+.filter-row select {
+    padding: .5rem .75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    font-size: .92rem;
+    background: #f8fafc;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right .7rem center;
+    color: #0f172a;
+}
+.filter-apply-row {
+    grid-column: 1/-1;
+    display: flex;
+    justify-content: flex-end;
+    gap: .75rem;
+    margin-top: .3rem;
+}
+.btn-apply {
+    padding: .55rem 1.4rem;
+    background: #7f1d1d;
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    font-weight: 700;
+    font-size: .9rem;
+    cursor: pointer;
+    transition: background .2s;
+}
+.btn-apply:hover { background: #b91c1c; }
+
+/* ── Split screen ── */
+.split-screen {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+/* ── Economy group selectors inside split ── */
+.econ-selector {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.2rem 1.4rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+}
+.econ-selector-header {
+    font-size: .75rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: .4rem;
+}
+.econ-selector select {
+    width: 100%;
+    padding: .5rem .75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    font-size: .92rem;
+    font-weight: 700;
+    color: #0f172a;
+    background: #f8fafc;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right .7rem center;
+}
+
+/* ── Stat cards row ── */
+.stat-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .75rem;
+    margin-top: 1rem;
+}
+.stat-card-mini {
+    border-radius: 8px;
+    padding: .8rem 1rem;
+    border: 1px solid;
+}
+.stat-card-cov {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+.stat-card-inf {
+    background: #fff1f2;
+    border-color: #fecdd3;
+}
+.scard-label { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
+.scard-label-cov { color: #15803d; }
+.scard-label-inf { color: #be123c; }
+.scard-value { font-size: 1.6rem; font-weight: 900; line-height: 1.1; }
+.scard-value-cov { color: #166534; }
+.scard-value-inf { color: #9f1239; }
+.scard-change { font-size: .78rem; font-weight: 700; margin-top: .2rem; }
+.change-pos { color: #16a34a; }
+.change-neg { color: #dc2626; }
+
+/* ── Charts ── */
+.chart-wrap {
+    margin-top: 1rem;
+    background: #fafafa;
+    border: 1px solid #f1f5f9;
+    border-radius: 8px;
+    padding: .8rem;
+}
+.chart-wrap h4 {
+    margin: 0 0 .5rem;
+    font-size: .82rem;
+    font-weight: 700;
+    color: #334155;
+    text-align: center;
+}
+canvas { width: 100% !important; }
+
+/* ── Key insights ── */
+.insights-box {
+    margin-top: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: .8rem 1rem;
+    border: 1px solid #e2e8f0;
+}
+.insights-box strong { font-size: .82rem; color: #0f172a; }
+.insights-box ul { margin: .4rem 0 0; padding-left: 1.2rem; }
+.insights-box li { font-size: .82rem; color: #334155; margin-bottom: .2rem; }
+
+/* ── Section card ── */
+.section-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.5rem 1.8rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    margin-bottom: 2rem;
+}
+.section-card h2 { margin: 0 0 .25rem; font-size: 1.1rem; font-weight: 800; color: #0f172a; }
+.section-card .sub { font-size: .84rem; color: #64748b; margin: 0 0 1rem; }
+
+/* ── Data table ── */
+.data-table { width: 100%; border-collapse: collapse; font-size: .87rem; }
+.data-table thead tr { background: #f8fafc; border-bottom: 2px solid #e2e8f0; }
+.data-table th {
+    padding: .6rem 1rem;
+    text-align: left;
+    font-size: .72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: #64748b;
+    white-space: nowrap;
+}
+.data-table th a { color: #64748b; text-decoration: none; display: flex; align-items: center; gap: .3rem; }
+.data-table th a:hover { color: #0f172a; }
+.data-table td { padding: .55rem 1rem; color: #334155; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.data-table tbody tr:hover { background: #f8fafc; }
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+/* ── Badges ── */
+.badge { display: inline-block; padding: .2rem .55rem; border-radius: 20px; font-size: .8rem; font-weight: 700; }
+.badge-high   { background: #fee2e2; color: #991b1b; }
+.badge-mid    { background: #fef9c3; color: #713f12; }
+.badge-low    { background: #dcfce7; color: #166534; }
+
+/* ── Progress bar ── */
+.prog-wrap { display: flex; align-items: center; gap: .5rem; }
+.prog-bg { flex: 1; background: #f1f5f9; border-radius: 6px; height: 8px; overflow: hidden; min-width: 60px; }
+.prog-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, #dc2626, #f87171); }
+.prog-lbl { font-size: .8rem; font-weight: 700; color: #dc2626; min-width: 50px; text-align: right; }
+
+/* ── Comparative analysis ── */
+.compare-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+.compare-card { border-radius: 10px; padding: 1.2rem 1.4rem; border: 1px solid; }
+.compare-card-blue  { background: #eff6ff; border-color: #bfdbfe; }
+.compare-card-green { background: #f0fdf4; border-color: #bbf7d0; }
+.compare-card-amber { background: #fffbeb; border-color: #fde68a; }
+.compare-card h4 { margin: 0 0 .3rem; font-size: .82rem; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; }
+.compare-card-blue  h4 { color: #1d4ed8; }
+.compare-card-green h4 { color: #15803d; }
+.compare-card-amber h4 { color: #92400e; }
+.compare-big { font-size: 2.2rem; font-weight: 900; line-height: 1; }
+.compare-card-blue  .compare-big { color: #1e40af; }
+.compare-card-green .compare-big { color: #166534; }
+.compare-card-amber .compare-big { color: #78350f; }
+.compare-sub { font-size: .78rem; color: #64748b; margin-top: .3rem; }
+
+/* ── Empty ── */
+.empty-state { text-align: center; padding: 2.5rem; color: #94a3b8; }
+.empty-state span { font-size: 2rem; display: block; margin-bottom: .5rem; }
+
+/* ── Filter tags ── */
+.filter-tags { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.2rem; }
+.filter-tag { background: #fff1f2; border: 1px solid #fecdd3; color: #9f1239; border-radius: 20px; padding: .2rem .7rem; font-size: .8rem; font-weight: 600; }
+</style>
+
+<!-- Hero -->
+<div class="eco-hero">
+    <h1>Global Health Trends &amp; Economic Correlation</h1>
+    <p>Explore the relationship between economic status and vaccination outcomes</p>
 </div>
 
-<div class="workspace">
-    <h2>Epidemiological Tracking Across Economic Status</h2>
-    <table>
-        <thead>
-            <tr><th>Country Name</th><th>Economic Bracket Group</th><th>Infection Classification</th><th>Reported Gross Cases</th></tr>
-        </thead>
-        <tbody>
-            {% for row in records %}
-            <tr>
-                <td>{{ row.CountryName }}</td>
-                <td>{{ row.EconomicStatus }}</td>
-                <td>{{ row.InfectionType }}</td>
-                <td>{{ "{:,}".format(row.ReportedCases) }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+<div class="eco-body">
+
+    <!-- Research Finding Banner -->
+    <div class="finding-banner">
+        <strong>Research Finding: Funding &amp; Outbreak Correlation</strong>
+        <p>Analysis shows a strong inverse correlation between economic development and vaccine-preventable disease outbreaks. Countries in lower economic tiers consistently show higher infection rates despite improving vaccination coverage. This split-screen comparison allows researchers to identify disparities and advocate for targeted funding increases.</p>
+    </div>
+
+    <!-- Global Filters -->
+    <form method="POST" action="/economic">
+        <div class="global-filters">
+            <h3>Global Filters</h3>
+            <div class="filter-row">
+                <label>Year Range</label>
+                <select name="year_range">
+                    {% for yr in year_ranges %}
+                    <option value="{{ yr }}" {% if sel_year_range == yr %}selected{% endif %}>{{ yr }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-row">
+                <label>Disease (for tables below)</label>
+                <select name="disease">
+                    {% for d in diseases %}
+                    <option value="{{ d.Disease }}" {% if sel_disease == d.Disease %}selected{% endif %}>{{ d.Disease }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Split screen income group selectors live INSIDE the form -->
+            <div style="grid-column:1/-1; display:grid; grid-template-columns:1fr 1fr; gap:1rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:1rem;">
+                <div>
+                    <div style="font-size:.75rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:.4rem;">Left Panel — Income Group</div>
+                    <select name="left_econ" style="width:100%;padding:.5rem .75rem;border:1px solid #cbd5e1;border-radius:7px;font-size:.92rem;background:#fff;">
+                        {% for s in statuses %}
+                        <option value="{{ s.EconomicStatus }}" {% if sel_left_econ == s.EconomicStatus %}selected{% endif %}>{{ s.EconomicStatus }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <div style="font-size:.75rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:.4rem;">Right Panel — Income Group</div>
+                    <select name="right_econ" style="width:100%;padding:.5rem .75rem;border:1px solid #cbd5e1;border-radius:7px;font-size:.92rem;background:#fff;">
+                        {% for s in statuses %}
+                        <option value="{{ s.EconomicStatus }}" {% if sel_right_econ == s.EconomicStatus %}selected{% endif %}>{{ s.EconomicStatus }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Year for tables -->
+            <div class="filter-row">
+                <label>Table Year</label>
+                <select name="year">
+                    {% for y in years %}
+                    <option value="{{ y.Year }}" {% if sel_year == y.Year|string %}selected{% endif %}>{{ y.Year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-apply-row" style="grid-column:1/-1;">
+                <button type="submit" class="btn-apply">Apply Filters</button>
+            </div>
+        </div>
+
+    <!-- ── SPLIT SCREEN ── -->
+    <div class="split-screen">
+
+        <!-- LEFT PANEL -->
+        <div class="econ-selector">
+            <div class="econ-selector-header">Income Group</div>
+            <div style="font-size:1rem;font-weight:800;color:#0f172a;padding:.4rem 0;">{{ sel_left_econ }}</div>
+
+            <!-- Stat cards -->
+            <div class="stat-cards">
+                <div class="stat-card-mini stat-card-cov">
+                    <div class="scard-label scard-label-cov">{{ yr_end }} Coverage</div>
+                    <div class="scard-value scard-value-cov">{{ left_stats.cov_now }}%</div>
+                    <div class="scard-change {% if left_stats.cov_change >= 0 %}change-pos{% else %}change-neg{% endif %}">
+                        {% if left_stats.cov_change >= 0 %}↗{% else %}↘{% endif %}
+                        {{ left_stats.cov_change | abs }}% since {{ yr_start }}
+                    </div>
+                </div>
+                <div class="stat-card-mini stat-card-inf">
+                    <div class="scard-label scard-label-inf">Infection Rate</div>
+                    <div class="scard-value scard-value-inf">{{ left_stats.inf_now }}%</div>
+                    <div class="scard-change {% if left_stats.inf_change <= 0 %}change-pos{% else %}change-neg{% endif %}">
+                        {% if left_stats.inf_change <= 0 %}↘{% else %}↗{% endif %}
+                        {{ left_stats.inf_change | abs }} since {{ yr_start }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coverage trend chart -->
+            <div class="chart-wrap">
+                <h4>Vaccination Coverage Trend</h4>
+                <canvas id="leftCovChart" height="140"></canvas>
+            </div>
+
+            <!-- Infection rate chart -->
+            <div class="chart-wrap">
+                <h4>Infection Rate Trend</h4>
+                <canvas id="leftInfChart" height="140"></canvas>
+            </div>
+
+            <!-- Key insights -->
+            <div class="insights-box">
+                <strong>Key Insights</strong>
+                <ul>
+                    <li>{{ left_stats.countries }} countries in this category</li>
+                    <li>Coverage {% if left_stats.cov_change >= 0 %}improved{% else %}declined{% endif %} by {{ left_stats.cov_change | abs }} percentage points</li>
+                    <li>Infection rates {% if left_stats.inf_change <= 0 %}decreased{% else %}increased{% endif %} by {{ left_stats.inf_change | abs }} percentage points</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL -->
+        <div class="econ-selector">
+            <div class="econ-selector-header">Income Group</div>
+            <div style="font-size:1rem;font-weight:800;color:#0f172a;padding:.4rem 0;">{{ sel_right_econ }}</div>
+
+            <div class="stat-cards">
+                <div class="stat-card-mini stat-card-cov">
+                    <div class="scard-label scard-label-cov">{{ yr_end }} Coverage</div>
+                    <div class="scard-value scard-value-cov">{{ right_stats.cov_now }}%</div>
+                    <div class="scard-change {% if right_stats.cov_change >= 0 %}change-pos{% else %}change-neg{% endif %}">
+                        {% if right_stats.cov_change >= 0 %}↗{% else %}↘{% endif %}
+                        {{ right_stats.cov_change | abs }}% since {{ yr_start }}
+                    </div>
+                </div>
+                <div class="stat-card-mini stat-card-inf">
+                    <div class="scard-label scard-label-inf">Infection Rate</div>
+                    <div class="scard-value scard-value-inf">{{ right_stats.inf_now }}%</div>
+                    <div class="scard-change {% if right_stats.inf_change <= 0 %}change-pos{% else %}change-neg{% endif %}">
+                        {% if right_stats.inf_change <= 0 %}↘{% else %}↗{% endif %}
+                        {{ right_stats.inf_change | abs }} since {{ yr_start }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-wrap">
+                <h4>Vaccination Coverage Trend</h4>
+                <canvas id="rightCovChart" height="140"></canvas>
+            </div>
+
+            <div class="chart-wrap">
+                <h4>Infection Rate Trend</h4>
+                <canvas id="rightInfChart" height="140"></canvas>
+            </div>
+
+            <div class="insights-box">
+                <strong>Key Insights</strong>
+                <ul>
+                    <li>{{ right_stats.countries }} countries in this category</li>
+                    <li>Coverage {% if right_stats.cov_change >= 0 %}improved{% else %}declined{% endif %} by {{ right_stats.cov_change | abs }} percentage points</li>
+                    <li>Infection rates {% if right_stats.inf_change <= 0 %}decreased{% else %}increased{% endif %} by {{ right_stats.inf_change | abs }} percentage points</li>
+                </ul>
+            </div>
+        </div>
+    </div><!-- /split-screen -->
+
+    <!-- ── Comparative Analysis ── -->
+    <div class="section-card">
+        <h2>Comparative Analysis</h2>
+        <div class="compare-grid">
+            <div class="compare-card compare-card-blue">
+                <h4>Coverage Gap</h4>
+                <div class="compare-big">{{ cov_gap }}%</div>
+                <div class="compare-sub">Difference between {{ sel_left_econ }} and {{ sel_right_econ }}</div>
+            </div>
+            <div class="compare-card compare-card-green">
+                <h4>Infection Rate Gap</h4>
+                <div class="compare-big">{{ inf_gap }}</div>
+                <div class="compare-sub">Higher in lower-income economies</div>
+            </div>
+            <div class="compare-card compare-card-amber">
+                <h4>Trend Direction</h4>
+                <div class="compare-big" style="font-size:1.5rem;">{% if both_improving %}Improving{% else %}Mixed{% endif %}</div>
+                <div class="compare-sub">{% if both_improving %}Both categories show positive trends{% else %}One or more categories declining{% endif %}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TABLE 1 ── Sub-Task B focused view ── -->
+    <div class="section-card">
+        <h2>Table 1 — Country-Level Infection Data by Economic Status</h2>
+        <p class="sub">
+            Showing <strong>{{ sel_disease }}</strong> cases per 100,000 people for all
+            <strong>{{ sel_left_econ }}</strong> countries in <strong>{{ sel_year }}</strong>
+            &nbsp;|&nbsp; {{ table1|length }} record{{ 's' if table1|length != 1 }}
+        </p>
+
+        <div class="filter-tags">
+            <span class="filter-tag">🦠 {{ sel_disease }}</span>
+            <span class="filter-tag">💼 {{ sel_left_econ }}</span>
+            <span class="filter-tag">📅 {{ sel_year }}</span>
+        </div>
+
+        {% if table1 %}
+        <div style="overflow-x:auto;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th><a href="?sort=Disease&dir={% if sort_col=='Disease' and sort_dir=='asc' %}desc{% else %}asc{% endif %}">Preventable Disease {% if sort_col=='Disease' %}{{ '↑' if sort_dir=='asc' else '↓' }}{% endif %}</a></th>
+                    <th><a href="?sort=Country&dir={% if sort_col=='Country' and sort_dir=='asc' %}desc{% else %}asc{% endif %}">Country {% if sort_col=='Country' %}{{ '↑' if sort_dir=='asc' else '↓' }}{% endif %}</a></th>
+                    <th><a href="?sort=EconPhase&dir={% if sort_col=='EconPhase' and sort_dir=='asc' %}desc{% else %}asc{% endif %}">Economic Phase {% if sort_col=='EconPhase' %}{{ '↑' if sort_dir=='asc' else '↓' }}{% endif %}</a></th>
+                    <th><a href="?sort=Year&dir={% if sort_col=='Year' and sort_dir=='asc' %}desc{% else %}asc{% endif %}">Year {% if sort_col=='Year' %}{{ '↑' if sort_dir=='asc' else '↓' }}{% endif %}</a></th>
+                    <th><a href="?sort=CasesPer100k&dir={% if sort_col=='CasesPer100k' and sort_dir=='asc' %}desc{% else %}asc{% endif %}">Cases per 100,000 {% if sort_col=='CasesPer100k' %}{{ '↑' if sort_dir=='asc' else '↓' }}{% endif %}</a></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in table1 %}
+                <tr>
+                    <td><strong>{{ row.Disease }}</strong></td>
+                    <td>{{ row.Country }}</td>
+                    <td>{{ row.EconPhase }}</td>
+                    <td>{{ row.Year }}</td>
+                    <td>
+                        {% set r = row.CasesPer100k %}
+                        <div class="prog-wrap">
+                            <div class="prog-bg">
+                                <div class="prog-fill" style="width:{{ [r, 100]|min }}%"></div>
+                            </div>
+                            {% if r >= 10 %}
+                                <span class="badge badge-high">{{ r }}</span>
+                            {% elif r >= 1 %}
+                                <span class="badge badge-mid">{{ r }}</span>
+                            {% else %}
+                                <span class="badge badge-low">{{ r }}</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <span>🔍</span>
+            No records found for {{ sel_disease }} / {{ sel_left_econ }} / {{ sel_year }}.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ── TABLE 2 ── Summary by economic phase ── -->
+    <div class="section-card">
+        <h2>Table 2 — Total Cases by Economic Phase</h2>
+        <p class="sub">
+            Summarised total cases of <strong>{{ sel_disease }}</strong> across all economic phases in <strong>{{ sel_year }}</strong>
+        </p>
+
+        {% if table2 %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Preventable Disease</th>
+                    <th>Economic Phase</th>
+                    <th>Year</th>
+                    <th>Cases</th>
+                    <th>Countries Reporting</th>
+                    <th>Share of Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set total_all = namespace(val=0) %}
+                {% for row in table2 %}{% set total_all.val = total_all.val + row.TotalCases %}{% endfor %}
+                {% for row in table2 %}
+                {% set share = ((row.TotalCases / total_all.val) * 100) | round(1) if total_all.val > 0 else 0 %}
+                <tr>
+                    <td><strong>{{ row.Disease }}</strong></td>
+                    <td>{{ row.EconPhase }}</td>
+                    <td>{{ row.Year }}</td>
+                    <td><strong>{{ "{:,.0f}".format(row.TotalCases) }}</strong></td>
+                    <td><span style="background:#e0f2fe;color:#0369a1;padding:.15rem .5rem;border-radius:20px;font-size:.8rem;font-weight:700;">{{ row.CountryCount }}</span></td>
+                    <td>
+                        <div class="prog-wrap">
+                            <div class="prog-bg">
+                                <div class="prog-fill" style="width:{{ share }}%"></div>
+                            </div>
+                            <span class="prog-lbl">{{ share }}%</span>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <span>📊</span>
+            No summary data available for this selection.
+        </div>
+        {% endif %}
+    </div>
+
+    </form><!-- closes the big form wrapping everything -->
+
+</div><!-- /eco-body -->
+
+<!-- ── Charts via Chart.js ── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+    // Data injected from Flask
+    const leftTrend  = {{ left_trend  | tojson }};
+    const rightTrend = {{ right_trend | tojson }};
+
+    function makeLabels(trend) { return trend.map(r => r.Year); }
+    function makeCov(trend)    { return trend.map(r => r.AvgCoverage); }
+    function makeInf(trend)    { return trend.map(r => r.AvgInfRate);  }
+
+    const lineDefaults = {
+        tension: 0.3,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        borderWidth: 2.5,
+    };
+
+    function buildLineChart(id, labels, data, color) {
+        new Chart(document.getElementById(id), {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{ ...lineDefaults, label: '', data, borderColor: color,
+                    backgroundColor: color + '22', fill: true, pointBackgroundColor: '#fff',
+                    pointBorderColor: color, pointBorderWidth: 2 }]
+            },
+            options: {
+                responsive: true, plugins: { legend: { display: false },
+                tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y}` } } },
+                scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' },
+                    ticks: { font: { size: 10 } } },
+                    x: { grid: { display: false }, ticks: { font: { size: 10 } } } }
+            }
+        });
+    }
+
+    function buildBarChart(id, labels, data, color) {
+        new Chart(document.getElementById(id), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{ label: 'Infection Rate %', data, backgroundColor: color,
+                    borderRadius: 4, hoverBackgroundColor: color + 'cc' }]
+            },
+            options: {
+                responsive: true, plugins: { legend: { display: false },
+                tooltip: { callbacks: { label: ctx => ` Infection Rate % : ${ctx.parsed.y}` } } },
+                scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' },
+                    ticks: { font: { size: 10 } } },
+                    x: { grid: { display: false }, ticks: { font: { size: 10 } } } }
+            }
+        });
+    }
+
+    buildLineChart('leftCovChart',  makeLabels(leftTrend),  makeCov(leftTrend),  '#3b82f6');
+    buildLineChart('rightCovChart', makeLabels(rightTrend), makeCov(rightTrend), '#3b82f6');
+    buildBarChart ('leftInfChart',  makeLabels(leftTrend),  makeInf(leftTrend),  '#f97316');
+    buildBarChart ('rightInfChart', makeLabels(rightTrend), makeInf(rightTrend), '#f97316');
+</script>
+
 {% endblock %}

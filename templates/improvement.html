@@ -1,40 +1,514 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="sidebar">
-    <h3>Analysis Controls</h3>
-    <form method="POST" action="/improvement">
-        <div class="form-group">
-            <label>Antigen Profile</label>
-            <select name="antigen">
-                {% for a in antigens %}
-                <option value="{{ a.Antigen }}" {% if sel_antigen == a.Antigen %}selected{% endif %}>{{ a.Antigen }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="form-group"><label>Baseline Year</label><input type="number" name="start_year" value="{{ sel_start }}"></div>
-        <div class="form-group"><label>Target Year</label><input type="number" name="end_year" value="{{ sel_end }}"></div>
-        <div class="form-group"><label>Return Record Limit</label><input type="number" name="limit" value="{{ limit }}"></div>
-        <button type="submit">Calculate Jump</button>
-    </form>
+
+<style>
+/* ── Hero ── */
+.ant-hero {
+    background: linear-gradient(135deg, #0b1e36 0%, #1e3a8a 70%, #1d4ed8 100%);
+    padding: 3rem 2.5rem 2.5rem;
+    color: #fff;
+}
+.ant-hero h1 { margin: 0 0 .4rem; font-size: 2rem; font-weight: 800; }
+.ant-hero p  { margin: 0; opacity: .85; font-size: 1rem; }
+
+/* ── Two-column layout ── */
+.ant-body {
+    display: grid;
+    grid-template-columns: 270px 1fr;
+    gap: 1.5rem;
+    max-width: 1300px;
+    margin: 2rem auto;
+    padding: 0 2rem;
+    align-items: start;
+}
+
+/* ── Sidebar ── */
+.ant-sidebar {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    position: sticky;
+    top: 1.5rem;
+}
+.sidebar-header {
+    background: #6d28d9;
+    color: #fff;
+    padding: 1rem 1.2rem .8rem;
+}
+.sidebar-header h3 { margin: 0 0 .2rem; font-size: 1rem; font-weight: 800; }
+.sidebar-header p  { margin: 0; font-size: .78rem; opacity: .85; }
+
+.antigen-item {
+    display: block;
+    padding: .85rem 1.2rem;
+    border-bottom: 1px solid #f1f5f9;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background .15s;
+}
+.antigen-item:hover { background: #f5f3ff; }
+.antigen-item.active { background: #ede9fe; border-left: 4px solid #7c3aed; }
+.antigen-item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.antigen-name { font-weight: 700; font-size: .95rem; color: #1e1b4b; }
+.antigen-arrow { color: #7c3aed; font-weight: 700; }
+.antigen-sub { font-size: .75rem; color: #64748b; margin-top: .15rem; }
+.cov-label { font-size: .78rem; color: #374151; }
+.cov-value-high { font-weight: 800; color: #16a34a; }
+.cov-value-mid  { font-weight: 800; color: #d97706; }
+.cov-value-low  { font-weight: 800; color: #dc2626; }
+
+/* ── Main workspace ── */
+.ant-workspace { min-width: 0; }
+
+/* ── Detail header card ── */
+.detail-header {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+    padding: 1.4rem 1.6rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+.detail-header-left h2 { margin: 0 0 .25rem; font-size: 1.25rem; font-weight: 800; color: #1e3a8a; }
+.detail-header-left p  { margin: 0; font-size: .88rem; color: #3b82f6; }
+.detail-header-stats   { display: flex; gap: 1rem; flex-shrink: 0; }
+.dstat {
+    background: #fff;
+    border: 1px solid #e0f2fe;
+    border-radius: 8px;
+    padding: .7rem 1rem;
+    min-width: 110px;
+    text-align: center;
+}
+.dstat-label { font-size: .72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .4px; }
+.dstat-value { font-size: 1.4rem; font-weight: 900; margin: .2rem 0 0; }
+.dstat-blue   .dstat-value { color: #2563eb; }
+.dstat-orange .dstat-value { color: #ea580c; }
+.dstat-purple { background: #faf5ff; border-color: #e9d5ff; }
+.dstat-purple .dstat-label { color: #7c3aed; }
+.dstat-purple .dstat-value { color: #6d28d9; font-size: 1rem; line-height: 1.3; }
+
+/* ── Section card ── */
+.section-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.4rem 1.6rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    margin-bottom: 1.5rem;
+}
+.section-card h2 { margin: 0 0 .25rem; font-size: 1.05rem; font-weight: 800; color: #0f172a; }
+.section-card .sub { font-size: .83rem; color: #64748b; margin: 0 0 1rem; }
+
+/* ── Filter form inside section card ── */
+.filter-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+    align-items: flex-end;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1.2rem;
+}
+.ff-group { display: flex; flex-direction: column; gap: .3rem; }
+.ff-group label { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #64748b; }
+.ff-group select, .ff-group input {
+    padding: .45rem .7rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: .88rem;
+    background: #fff;
+    color: #0f172a;
+    min-width: 100px;
+}
+.btn-run {
+    padding: .5rem 1.2rem;
+    background: #1e3a8a;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: .88rem;
+    cursor: pointer;
+    transition: background .2s;
+    align-self: flex-end;
+}
+.btn-run:hover { background: #1d4ed8; }
+
+/* ── Data table ── */
+.data-table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+.data-table thead tr { background: #f8fafc; border-bottom: 2px solid #e2e8f0; }
+.data-table th {
+    padding: .6rem 1rem;
+    text-align: left;
+    font-size: .72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: #64748b;
+    white-space: nowrap;
+}
+.data-table td { padding: .55rem 1rem; color: #334155; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.data-table tbody tr:hover { background: #f8fafc; }
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+/* ── Rate badge ── */
+.rate-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .2rem .6rem;
+    border-radius: 20px;
+    font-size: .82rem;
+    font-weight: 700;
+}
+.rate-pos { background: #dcfce7; color: #166534; }
+.rate-neg { background: #fee2e2; color: #991b1b; }
+.rate-neu { background: #f1f5f9; color: #475569; }
+
+/* ── Chart section ── */
+.chart-hero {
+    background: linear-gradient(135deg, #fef9c3 0%, #fef3c7 100%);
+    border: 1px solid #fde68a;
+    border-radius: 12px;
+    padding: 1.4rem 1.6rem;
+    margin-bottom: 1.5rem;
+}
+.chart-hero h2 { margin: 0 0 .25rem; font-size: 1.05rem; font-weight: 800; color: #78350f; }
+.chart-canvas-wrap {
+    background: #fff;
+    border-radius: 8px;
+    padding: .8rem;
+    margin-top: .8rem;
+}
+.chart-legend {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+    padding: .6rem 1rem;
+    font-size: .8rem;
+    color: #78350f;
+    margin-top: .6rem;
+}
+
+/* ── Zero-dose section ── */
+.zero-section {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.4rem 1.6rem;
+    margin-bottom: 1.5rem;
+}
+.zero-section h2 { margin: 0 0 1rem; font-size: 1.05rem; font-weight: 800; color: #ea580c; }
+
+/* ── Region / econ pills ── */
+.pill {
+    display: inline-block;
+    padding: .15rem .55rem;
+    border-radius: 20px;
+    font-size: .75rem;
+    font-weight: 600;
+}
+.pill-blue   { background: #dbeafe; color: #1e40af; }
+.pill-green  { background: #dcfce7; color: #166534; }
+.pill-amber  { background: #fef9c3; color: #713f12; }
+.pill-red    { background: #fee2e2; color: #991b1b; }
+
+/* ── Empty ── */
+.empty-state { text-align: center; padding: 2.5rem; color: #94a3b8; }
+.empty-state span { font-size: 2rem; display: block; margin-bottom: .5rem; }
+
+/* ── Filter tags ── */
+.filter-tags { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+.filter-tag { background: #ede9fe; border: 1px solid #ddd6fe; color: #5b21b6; border-radius: 20px; padding: .2rem .7rem; font-size: .8rem; font-weight: 600; }
+</style>
+
+<!-- Hero -->
+<div class="ant-hero">
+    <h1>Antigen &amp; Disease Deep-Dive</h1>
+    <p>Analyze vaccine-specific coverage trends and identify zero-dose populations</p>
 </div>
 
-<div class="workspace">
-    <h2>Top Immunization Improvements</h2>
-    <table>
-        <thead>
-            <tr><th>Country Name</th><th>Antigen Target</th><th>Baseline Rate</th><th>Target Rate</th><th>Calculated Progress Net Variance</th></tr>
-        </thead>
-        <tbody>
-            {% for row in records %}
-            <tr>
-                <td>{{ row.CountryName }}</td>
-                <td>{{ row.Antigen }}</td>
-                <td>{{ row.StartCoverage }}%</td>
-                <td>{{ row.EndCoverage }}%</td>
-                <td><strong style="color: #22c55e;">+{{ "%.2f"|format(row.ProgressJump) }}%</strong></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+<div class="ant-body">
+
+    <!-- ── SIDEBAR ── -->
+    <aside class="ant-sidebar">
+        <div class="sidebar-header">
+            <h3>Select Antigen</h3>
+            <p>Click to view detailed analysis</p>
+        </div>
+        {% for a in sidebar_antigens %}
+        <a class="antigen-item {% if a.Antigen == sel_antigen %}active{% endif %}"
+           href="/improvement?antigen={{ a.Antigen }}">
+            <div class="antigen-item-top">
+                <span class="antigen-name">{{ a.Antigen }}</span>
+                <span class="antigen-arrow">›</span>
+            </div>
+            <div class="antigen-sub">{{ a.Antigen }}</div>
+            <div>
+                <span class="cov-label">Coverage: </span>
+                {% set cov = a.AvgCoverage2024 or 0 %}
+                {% if cov >= 90 %}
+                    <span class="cov-value-high">{{ cov | int }}%</span>
+                {% elif cov >= 75 %}
+                    <span class="cov-value-mid">{{ cov | int }}%</span>
+                {% else %}
+                    <span class="cov-value-low">{{ cov | int }}%</span>
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+    </aside>
+
+    <!-- ── WORKSPACE ── -->
+    <div class="ant-workspace">
+
+        <!-- Detail header -->
+        <div class="detail-header">
+            <div class="detail-header-left">
+                <h2>{{ a_title }}</h2>
+                <p>{{ a_desc }}</p>
+            </div>
+            <div class="detail-header-stats">
+                <div class="dstat dstat-blue">
+                    <div class="dstat-label">Global Coverage 2024</div>
+                    <div class="dstat-value">{{ headline.GlobalCoverage | int if headline else '—' }}%</div>
+                </div>
+                <div class="dstat dstat-orange">
+                    <div class="dstat-label">Low-Coverage Countries</div>
+                    <div class="dstat-value">{{ headline.ZeroDoseCountries if headline else '—' }}</div>
+                </div>
+                <div class="dstat dstat-purple">
+                    <div class="dstat-label">Protected Against</div>
+                    <div class="dstat-value">{{ a_protects }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Historical Coverage Trend Chart ── -->
+        <div class="chart-hero">
+            <h2>📈 Historical Coverage Trends (2015–2024)</h2>
+            <div class="chart-canvas-wrap">
+                <canvas id="trendChart" height="200"></canvas>
+            </div>
+            <div class="chart-legend">
+                Green area represents higher-income countries (High Income + Upper Middle Income),
+                orange represents lower-income countries (Low Income + Lower Middle Income).
+                The gap illustrates health equity challenges.
+            </div>
+        </div>
+
+        <!-- ── Zero-Dose Population Trends ── -->
+        <div class="zero-section">
+            <h2>🔴 Zero-Dose Population Trends</h2>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Countries &lt; 90% Coverage</th>
+                        <th>Global Coverage</th>
+                        <th>Income Gap</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in zero_dose %}
+                    <tr>
+                        <td><strong>{{ row.Year }}</strong></td>
+                        <td>
+                            <span class="pill {% if row.ZeroDoseCount > 70 %}pill-red{% elif row.ZeroDoseCount > 50 %}pill-amber{% else %}pill-green{% endif %}">
+                                {{ row.ZeroDoseCount }}
+                            </span>
+                        </td>
+                        <td>{{ row.GlobalCoverage | int }}%</td>
+                        <td>{{ row.IncomeGap | int }} pp</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ── Sub-Task A: Biggest Improvement in Vaccination Rates ── -->
+        <div class="section-card">
+            <h2>Sub-Task A — Countries with the Biggest Vaccination Rate Jump</h2>
+            <p class="sub">
+                Vaccination rate = doses administered ÷ population × 100.
+                Select antigen, year range, number of results, and sort order — all filtering done in SQL.
+            </p>
+
+            <form method="POST" action="/improvement">
+                <input type="hidden" name="antigen" value="{{ sel_antigen }}">
+                <div class="filter-form">
+                    <div class="ff-group">
+                        <label>Starting Year</label>
+                        <select name="start_year">
+                            {% for y in range(2000, 2025) %}
+                            <option value="{{ y }}" {% if sel_start == y|string %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="ff-group">
+                        <label>Ending Year</label>
+                        <select name="end_year">
+                            {% for y in range(2000, 2025) %}
+                            <option value="{{ y }}" {% if sel_end == y|string %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="ff-group">
+                        <label>Top N Countries</label>
+                        <select name="limit">
+                            {% for n in [5, 10, 15, 20, 25] %}
+                            <option value="{{ n }}" {% if limit_n == n|string %}selected{% endif %}>{{ n }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="ff-group">
+                        <label>Sort By</label>
+                        <select name="sort_by">
+                            <option value="RateIncrease" {% if sort_by == 'RateIncrease' %}selected{% endif %}>Rate Increase ↓</option>
+                            <option value="Country"      {% if sort_by == 'Country'      %}selected{% endif %}>Country A–Z</option>
+                            <option value="EndRate"      {% if sort_by == 'EndRate'      %}selected{% endif %}>End Rate ↓</option>
+                            <option value="StartRate"    {% if sort_by == 'StartRate'    %}selected{% endif %}>Start Rate ↓</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-run">Run Query</button>
+                </div>
+            </form>
+
+            <div class="filter-tags">
+                <span class="filter-tag">💉 {{ sel_antigen }}</span>
+                <span class="filter-tag">📅 {{ sel_start }} → {{ sel_end }}</span>
+                <span class="filter-tag">🔢 Top {{ limit_n }}</span>
+                <span class="filter-tag">↕ {{ sort_by }}</span>
+            </div>
+
+            {% if subtask_a %}
+            <div style="overflow-x:auto;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Country</th>
+                        <th>Region</th>
+                        <th>Economic Phase</th>
+                        <th>Vaccination Rate Increase</th>
+                        <th>Start Year</th>
+                        <th>End Year</th>
+                        <th>Start Rate</th>
+                        <th>End Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in subtask_a %}
+                    <tr>
+                        <td style="color:#94a3b8;font-weight:700;">{{ loop.index }}</td>
+                        <td><strong>{{ row.Country }}</strong></td>
+                        <td><span class="pill pill-blue">{{ row.Region }}</span></td>
+                        <td><span class="pill pill-amber">{{ row.EconPhase }}</span></td>
+                        <td>
+                            {% set ri = row.RateIncrease %}
+                            <span class="rate-badge {% if ri > 0 %}rate-pos{% elif ri < 0 %}rate-neg{% else %}rate-neu{% endif %}">
+                                {% if ri > 0 %}↑{% elif ri < 0 %}↓{% endif %}
+                                {{ ri | abs }}%
+                            </span>
+                        </td>
+                        <td>{{ row.StartYear }}</td>
+                        <td>{{ row.EndYear }}</td>
+                        <td>{{ row.StartRate }}%</td>
+                        <td>{{ row.EndRate }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <span>🔍</span>
+                No results found for {{ sel_antigen }} between {{ sel_start }} and {{ sel_end }}.
+                Try adjusting the year range.
+            </div>
+            {% endif %}
+        </div>
+
+    </div><!-- /workspace -->
+</div><!-- /body -->
+
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const historical = {{ historical | tojson }};
+
+const labels       = historical.map(r => r.Year);
+const higherData   = historical.map(r => r.HigherIncome);
+const lowerData    = historical.map(r => r.LowerIncome);
+
+new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+        labels,
+        datasets: [
+            {
+                label: 'Higher Income',
+                data: higherData,
+                borderColor: '#16a34a',
+                backgroundColor: 'rgba(134,239,172,0.35)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 4,
+                pointHoverRadius: 7,
+                borderWidth: 2.5,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: '#16a34a',
+                pointBorderWidth: 2,
+            },
+            {
+                label: 'Lower Income',
+                data: lowerData,
+                borderColor: '#d97706',
+                backgroundColor: 'rgba(217,119,6,0.25)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 4,
+                pointHoverRadius: 7,
+                borderWidth: 2.5,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: '#d97706',
+                pointBorderWidth: 2,
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+            legend: { position: 'top', labels: { font: { size: 11 } } },
+            tooltip: {
+                callbacks: {
+                    label: ctx => ` ${ctx.dataset.label} : ${ctx.parsed.y}`
+                }
+            }
+        },
+        scales: {
+            y: {
+                min: 0, max: 100,
+                grid: { color: '#f1f5f9' },
+                ticks: { font: { size: 10 }, callback: v => v + '%' }
+            },
+            x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+        }
+    }
+});
+</script>
+
 {% endblock %}
