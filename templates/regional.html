@@ -125,7 +125,7 @@
     color: #0f172a;
     margin: 0 0 .2rem;
 }
-.section-card-header p  { font-size: .85rem; color: #64748b; margin: 0; }
+.section-card-header p { font-size: .85rem; color: #64748b; margin: 0; }
 
 /* ── Tables ── */
 .data-table {
@@ -148,6 +148,26 @@
     color: #64748b;
     white-space: nowrap;
 }
+/* Sortable th button style */
+.data-table th form { display: inline; }
+.sort-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font: inherit;
+    font-size: .73rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: #64748b;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+}
+.sort-btn:hover { color: #0f172a; }
+.sort-btn.active { color: #0b5c3a; }
+
 .data-table td {
     padding: .6rem 1rem;
     color: #334155;
@@ -166,9 +186,9 @@
     font-weight: 700;
     white-space: nowrap;
 }
-.badge-high   { background: #dcfce7; color: #166534; }
-.badge-mid    { background: #fef9c3; color: #713f12; }
-.badge-low    { background: #fee2e2; color: #991b1b; }
+.badge-high { background: #dcfce7; color: #166534; }
+.badge-mid  { background: #fef9c3; color: #713f12; }
+.badge-low  { background: #fee2e2; color: #991b1b; }
 
 /* ── Region count pill ── */
 .pill-count {
@@ -181,12 +201,8 @@
     font-weight: 700;
 }
 
-/* ── Mini progress bar inside table 2 ── */
-.progress-wrap {
-    display: flex;
-    align-items: center;
-    gap: .5rem;
-}
+/* ── Mini progress bar ── */
+.progress-wrap { display: flex; align-items: center; gap: .5rem; }
 .progress-bar-bg {
     flex: 1;
     background: #f1f5f9;
@@ -199,7 +215,6 @@
     height: 100%;
     border-radius: 6px;
     background: linear-gradient(90deg, #16a34a, #22c55e);
-    transition: width .4s ease;
 }
 .progress-pct { font-size: .82rem; font-weight: 700; color: #15803d; min-width: 36px; text-align: right; }
 
@@ -212,10 +227,7 @@
 }
 .empty-state span { font-size: 2rem; display: block; margin-bottom: .5rem; }
 
-/* ── Country pin icon ── */
-.pin-icon { color: #94a3b8; margin-right: .35rem; font-size: .9rem; }
-
-/* ── Active filter tag ── */
+/* ── Filter tags ── */
 .filter-tags { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.2rem; }
 .filter-tag {
     background: #f0fdf4;
@@ -242,6 +254,11 @@
         <div class="sidebar-title">🔽 Filters</div>
 
         <form method="POST" action="/regional">
+            <!-- carry sort state when filters are re-applied -->
+            <input type="hidden" name="t1_sort"     value="{{ t1_sort }}">
+            <input type="hidden" name="t1_sort_dir" value="{{ t1_sort_dir }}">
+            <input type="hidden" name="t2_sort"     value="{{ t2_sort }}">
+            <input type="hidden" name="t2_sort_dir" value="{{ t2_sort_dir }}">
 
             <div class="form-group">
                 <label>Region</label>
@@ -309,6 +326,7 @@
                     met the 90% threshold for <strong>{{ sel_antigen }}</strong>
                     in <strong>{{ sel_year }}</strong>
                     {% if sel_region %}within <strong>{{ sel_region }}</strong>{% endif %}
+                    &nbsp;|&nbsp; Click <strong>Country</strong> or <strong>Coverage %</strong> to sort
                 </p>
             </div>
 
@@ -316,11 +334,41 @@
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>Country</th>
+                        <!-- Sortable: Country A→Z / Z→A -->
+                        <th>
+                            <form method="POST" action="/regional">
+                                <input type="hidden" name="region"      value="{{ sel_region or '' }}">
+                                <input type="hidden" name="year"        value="{{ sel_year }}">
+                                <input type="hidden" name="antigen"     value="{{ sel_antigen }}">
+                                <input type="hidden" name="t1_sort"     value="CountryName">
+                                <input type="hidden" name="t1_sort_dir" value="{{ 'DESC' if t1_sort == 'CountryName' and t1_sort_dir == 'ASC' else 'ASC' }}">
+                                <input type="hidden" name="t2_sort"     value="{{ t2_sort }}">
+                                <input type="hidden" name="t2_sort_dir" value="{{ t2_sort_dir }}">
+                                <button type="submit" class="sort-btn {% if t1_sort == 'CountryName' %}active{% endif %}">
+                                    Country
+                                    {% if t1_sort == 'CountryName' %}{{ '↑' if t1_sort_dir == 'ASC' else '↓' }}{% else %}↕{% endif %}
+                                </button>
+                            </form>
+                        </th>
                         <th>Region</th>
                         <th>Antigen</th>
                         <th>Year</th>
-                        <th>Coverage %</th>
+                        <!-- Sortable: Coverage % high→low / low→high -->
+                        <th>
+                            <form method="POST" action="/regional">
+                                <input type="hidden" name="region"      value="{{ sel_region or '' }}">
+                                <input type="hidden" name="year"        value="{{ sel_year }}">
+                                <input type="hidden" name="antigen"     value="{{ sel_antigen }}">
+                                <input type="hidden" name="t1_sort"     value="CoveragePct">
+                                <input type="hidden" name="t1_sort_dir" value="{{ 'ASC' if t1_sort == 'CoveragePct' and t1_sort_dir == 'DESC' else 'DESC' }}">
+                                <input type="hidden" name="t2_sort"     value="{{ t2_sort }}">
+                                <input type="hidden" name="t2_sort_dir" value="{{ t2_sort_dir }}">
+                                <button type="submit" class="sort-btn {% if t1_sort == 'CoveragePct' %}active{% endif %}">
+                                    Coverage %
+                                    {% if t1_sort == 'CoveragePct' %}{{ '↑' if t1_sort_dir == 'ASC' else '↓' }}{% else %}↕{% endif %}
+                                </button>
+                            </form>
+                        </th>
                         <th>Doses Given</th>
                         <th>Target Pop.</th>
                     </tr>
@@ -328,7 +376,7 @@
                 <tbody>
                     {% for row in table1 %}
                     <tr>
-                        <td><span class="pin-icon">📍</span>{{ row.CountryName }}</td>
+                        <td>📍 {{ row.CountryName }}</td>
                         <td>{{ row.RegionName }}</td>
                         <td>{{ row.Antigen }}</td>
                         <td>{{ row.Year }}</td>
@@ -364,6 +412,7 @@
                 <p>
                     Regional summary for <strong>{{ sel_antigen }}</strong> in <strong>{{ sel_year }}</strong>
                     {% if sel_region %}(filtered to <strong>{{ sel_region }}</strong>){% endif %}
+                    &nbsp;|&nbsp; Click <strong>Avg Coverage</strong> or <strong>Countries ≥ 90%</strong> to sort
                 </p>
             </div>
 
@@ -374,8 +423,38 @@
                         <th>Region</th>
                         <th>Antigen</th>
                         <th>Year</th>
-                        <th>Countries ≥ 90%</th>
-                        <th>Avg Coverage</th>
+                        <!-- Sortable: Countries ≥ 90% -->
+                        <th>
+                            <form method="POST" action="/regional">
+                                <input type="hidden" name="region"      value="{{ sel_region or '' }}">
+                                <input type="hidden" name="year"        value="{{ sel_year }}">
+                                <input type="hidden" name="antigen"     value="{{ sel_antigen }}">
+                                <input type="hidden" name="t1_sort"     value="{{ t1_sort }}">
+                                <input type="hidden" name="t1_sort_dir" value="{{ t1_sort_dir }}">
+                                <input type="hidden" name="t2_sort"     value="CountriesAt90">
+                                <input type="hidden" name="t2_sort_dir" value="{{ 'ASC' if t2_sort == 'CountriesAt90' and t2_sort_dir == 'DESC' else 'DESC' }}">
+                                <button type="submit" class="sort-btn {% if t2_sort == 'CountriesAt90' %}active{% endif %}">
+                                    Countries ≥ 90%
+                                    {% if t2_sort == 'CountriesAt90' %}{{ '↑' if t2_sort_dir == 'ASC' else '↓' }}{% else %}↕{% endif %}
+                                </button>
+                            </form>
+                        </th>
+                        <!-- Sortable: Avg Coverage — default DESC so ≥90% regions appear first -->
+                        <th>
+                            <form method="POST" action="/regional">
+                                <input type="hidden" name="region"      value="{{ sel_region or '' }}">
+                                <input type="hidden" name="year"        value="{{ sel_year }}">
+                                <input type="hidden" name="antigen"     value="{{ sel_antigen }}">
+                                <input type="hidden" name="t1_sort"     value="{{ t1_sort }}">
+                                <input type="hidden" name="t1_sort_dir" value="{{ t1_sort_dir }}">
+                                <input type="hidden" name="t2_sort"     value="AvgCoverage">
+                                <input type="hidden" name="t2_sort_dir" value="{{ 'ASC' if t2_sort == 'AvgCoverage' and t2_sort_dir == 'DESC' else 'DESC' }}">
+                                <button type="submit" class="sort-btn {% if t2_sort == 'AvgCoverage' %}active{% endif %}">
+                                    Avg Coverage
+                                    {% if t2_sort == 'AvgCoverage' %}{{ '↑' if t2_sort_dir == 'ASC' else '↓' }}{% else %}↕{% endif %}
+                                </button>
+                            </form>
+                        </th>
                         <th>Coverage Spread</th>
                     </tr>
                 </thead>
@@ -399,8 +478,7 @@
                         <td>
                             <div class="progress-wrap">
                                 <div class="progress-bar-bg">
-                                    <div class="progress-bar-fill"
-                                         style="width: {{ [row.AvgCoverage, 100]|min }}%"></div>
+                                    <div class="progress-bar-fill" style="width: {{ [row.AvgCoverage, 100]|min }}%"></div>
                                 </div>
                                 <span class="progress-pct">{{ row.AvgCoverage }}%</span>
                             </div>

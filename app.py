@@ -2,6 +2,7 @@ from flask import Flask, render_template, request
 import sqlite3
 
 app = Flask(__name__)
+# Built-in fallback helper registration 
 app.jinja_env.globals.update(int=int)
 DB_FILE = "immunisation.db"
 
@@ -83,7 +84,20 @@ def regional():
     selected_year    = request.form.get('year',   '2010')   if request.method == 'POST' else '2010'
     selected_antigen = request.form.get('antigen', 'MCV2')  if request.method == 'POST' else 'MCV2'
 
-    t1_query = """
+    # Table 1 sort configuration
+    t1_sort     = request.form.get('t1_sort', 'CoveragePct')
+    t1_sort_dir = request.form.get('t1_sort_dir', 'DESC')
+    t1_allowed  = {'CountryName': 'c.name', 'CoveragePct': 'CAST(v.coverage AS REAL)'}
+    t1_order    = f"{t1_allowed.get(t1_sort, 'CAST(v.coverage AS REAL)')} {t1_sort_dir}"
+
+    # Table 2 sort configuration
+    t2_sort     = request.form.get('t2_sort', 'AvgCoverage')
+    t2_sort_dir = request.form.get('t2_sort_dir', 'DESC')
+    t2_allowed  = {'AvgCoverage': 'AvgCoverage', 'CountriesAt90': 'CountriesAt90', 'RegionName': 'r.region'}
+    t2_order    = f"{t2_allowed.get(t2_sort, 'AvgCoverage')} {t2_sort_dir}"
+
+    # ── TABLE 1 ──
+    t1_query = f"""
         SELECT
             c.name                             AS CountryName,
             r.region                           AS RegionName,
@@ -103,10 +117,11 @@ def regional():
     if selected_region:
         t1_query += " AND r.region = ?"
         t1_params.append(selected_region)
-    t1_query += " ORDER BY CAST(v.coverage AS REAL) DESC;"
+    t1_query += f" ORDER BY {t1_order};"
     table1 = query_db(t1_query, t1_params)
 
-    t2_query = """
+    # ── TABLE 2 ──
+    t2_query = f"""
         SELECT
             r.region  AS RegionName,
             v.antigen AS Antigen,
@@ -125,9 +140,10 @@ def regional():
     if selected_region:
         t2_query += " AND r.region = ?"
         t2_params.append(selected_region)
-    t2_query += " GROUP BY r.region, v.antigen, v.year ORDER BY CountriesAt90 DESC;"
+    t2_query += f" GROUP BY r.region, v.antigen, v.year ORDER BY {t2_order};"
     table2 = query_db(t2_query, t2_params)
 
+    # ── Sidebar Stats ──
     stats_query = """
         SELECT
             ROUND(AVG(CAST(coverage AS REAL)), 1) AS AvgCoverage,
@@ -149,7 +165,9 @@ def regional():
                            table1=table1, table2=table2, stats=stats,
                            sel_region=selected_region,
                            sel_year=selected_year,
-                           sel_antigen=selected_antigen)
+                           sel_antigen=selected_antigen,
+                           t1_sort=t1_sort, t1_sort_dir=t1_sort_dir,
+                           t2_sort=t2_sort, t2_sort_dir=t2_sort_dir)
 
 
 @app.route('/economic', methods=['GET', 'POST'])
@@ -314,8 +332,6 @@ def economic():
 
 @app.route('/improvement', methods=['GET', 'POST'])
 def improvement():
-    # ── Sidebar: antigens from Antigen table (col = AntigenID) + 2024 avg coverage
-    # FIX: Antigen table uses AntigenID (not 'antigen') as the primary key column
     sidebar_antigens = query_db("""
         SELECT
             a.AntigenID                                    AS Antigen,
@@ -348,7 +364,6 @@ def improvement():
     if sort_by not in allowed_sorts:
         sort_by = 'RateIncrease'
 
-    # ── Sub-Task A: vaccination rate jump (doses/population*100), all in SQL ──
     subtask_a = query_db(f"""
         SELECT
             c.name                                                          AS Country,
@@ -381,7 +396,6 @@ def improvement():
         LIMIT ?;
     """, [sel_antigen, int(sel_start), int(sel_end), int(limit_n)])
 
-    # ── Headline stats (global coverage + low-coverage country count) ─────────
     headline = query_db("""
         SELECT
             v.antigen                                                  AS Antigen,
@@ -393,7 +407,6 @@ def improvement():
         GROUP BY v.antigen;
     """, [sel_antigen], one=True)
 
-    # ── Historical trend: conditional aggregation by income group, no Python ──
     historical = rows_to_dicts(query_db("""
         SELECT
             v.year                                                                     AS Year,
@@ -410,7 +423,6 @@ def improvement():
         ORDER BY v.year;
     """, [sel_antigen]))
 
-    # ── Zero-dose trend: countries <90% per year + income gap, all SQL ────────
     zero_dose = query_db("""
         SELECT
             v.year                                                                  AS Year,
@@ -470,7 +482,7 @@ def improvement():
 
 
 # ==========================================
-# Integrity route: SQL-based audit table with discrepancy calculation and quality tiers
+# Integrity route: Finished & Deduplicated
 # ==========================================
 
 @app.route('/integrity', methods=['GET', 'POST'])
@@ -499,9 +511,7 @@ def integrity():
         sort_col = 'DiscrepancyPct'
     order_clause = f"{sort_col} {'DESC' if sort_dir == 'desc' else 'ASC'}"
 
-    # ── SUB-TASK B ────────────────────────────────────────────────────────────
-    # Single UNION query: Global row first, then above-average countries.
-    # Global rate is computed once as a subquery; no Python post-processing.
+    # ── SUB-TASK B ──
     subtask_b = query_db("""
         SELECT
             'Global'           AS Country,
@@ -526,95 +536,51 @@ def integrity():
         JOIN  Country           c  ON i.country  = c.CountryID
         JOIN  Infection_Type    it ON i.inf_type  = it.id
         JOIN  CountryPopulation cp ON i.country   = cp.country AND i.year = cp.year
-        WHERE it.description = ?
-          AND i.year         = ?
-          AND cp.population  > 0
-          AND (i.cases * 100000.0) / cp.population > (
-              SELECT AVG((s.cases * 100000.0) / sp.population)
-              FROM   InfectionData s
-              JOIN   CountryPopulation sp ON s.country = sp.country AND s.year = sp.year
-              JOIN   Infection_Type sit   ON s.inf_type = sit.id
-              WHERE  sit.description = ? AND s.year = ? AND sp.population > 0
+        WHERE it.description = ? AND i.year = ? AND cp.population > 0
+          AND ROUND((i.cases * 100000.0) / cp.population, 2) > (
+              SELECT AVG((i2.cases * 100000.0) / cp2.population)
+              FROM InfectionData i2
+              JOIN Infection_Type it2 ON i2.inf_type = it2.id
+              JOIN CountryPopulation cp2 ON i2.country = cp2.country AND i2.year = cp2.year
+              WHERE it2.description = ? AND i2.year = ? AND cp2.population > 0
           )
         ORDER BY is_country ASC, RatePer100k DESC;
-    """, [sel_disease, int(sel_year),
-          sel_disease, int(sel_year),
-          sel_disease, int(sel_year)])
+    """, [sel_disease, int(sel_year), sel_disease, int(sel_year), sel_disease, int(sel_year)])
 
-    # ── AUDIT TABLE ───────────────────────────────────────────────────────────
-    # Discrepancy = how far average coverage deviates from 100% target.
-    # Quality tiers rated in SQL; optional filter and sort also in SQL.
-    quality_filter = ""
-    audit_params   = [int(sel_audit_year)]
-    if sel_quality:
-        quality_filter = """
-            HAVING CASE
-                WHEN ABS(100 - AVG(CAST(v.coverage AS REAL))) < 2  THEN 'Excellent'
-                WHEN ABS(100 - AVG(CAST(v.coverage AS REAL))) < 5  THEN 'Good'
-                WHEN ABS(100 - AVG(CAST(v.coverage AS REAL))) < 10 THEN 'Fair'
-                ELSE 'Poor'
-            END = ?
-        """
-        audit_params.append(sel_quality)
-
-    audit_records = query_db(f"""
-        SELECT
-            c.name                                                  AS Country,
-            v.year                                                  AS Year,
-            ROUND(AVG(CAST(v.coverage AS REAL)), 1)                 AS AvgCoverage,
-            ROUND(ABS(100 - AVG(CAST(v.coverage AS REAL))), 1)      AS DiscrepancyPct,
-            CASE
-                WHEN ABS(100 - AVG(CAST(v.coverage AS REAL))) < 2  THEN 'Excellent'
-                WHEN ABS(100 - AVG(CAST(v.coverage AS REAL))) < 5  THEN 'Good'
-                WHEN ABS(100 - AVG(CAST(v.coverage AS REAL))) < 10 THEN 'Fair'
-                ELSE 'Poor'
-            END                                                     AS Quality
-        FROM  Vaccination v
-        JOIN  Country c ON v.country = c.CountryID
-        WHERE v.year = ?
-          AND v.coverage != ''
-          AND v.coverage IS NOT NULL
-          AND CAST(v.coverage AS REAL) > 0
-        GROUP BY v.country, v.year
-        {quality_filter}
-        ORDER BY {order_clause};
-    """, audit_params)
-
-    # ── Quality summary counts (for the 4 stat cards at top) ─────────────────
-    quality_counts = query_db("""
-        SELECT Quality, COUNT(*) AS cnt FROM (
-            SELECT CASE
-                WHEN ABS(100 - AVG(CAST(v.coverage AS REAL))) < 2  THEN 'Excellent'
-                WHEN ABS(100 - AVG(CAST(v.coverage AS REAL))) < 5  THEN 'Good'
-                WHEN ABS(100 - AVG(CAST(v.coverage AS REAL))) < 10 THEN 'Fair'
-                ELSE 'Poor'
-            END AS Quality
+    # ── PRIMARY AUDIT DATA VIEW ──
+    audit_base_query = f"""
+        SELECT * FROM (
+            SELECT
+                c.name AS Country,
+                v.year AS Year,
+                ROUND(AVG(CAST(v.coverage AS REAL)), 1) AS AvgCoverage,
+                ROUND(ABS(AVG(CAST(v.target_num AS REAL)) - cp.population) / cp.population * 100, 2) AS DiscrepancyPct,
+                CASE 
+                    WHEN ROUND(ABS(AVG(CAST(v.target_num AS REAL)) - cp.population) / cp.population * 100, 2) < 5.0 THEN 'High'
+                    WHEN ROUND(ABS(AVG(CAST(v.target_num AS REAL)) - cp.population) / cp.population * 100, 2) < 15.0 THEN 'Moderate'
+                    ELSE 'Poor'
+                END AS Quality
             FROM Vaccination v
+            JOIN Country c ON v.country = c.CountryID
+            JOIN CountryPopulation cp ON c.CountryID = cp.country AND v.year = cp.year
             WHERE v.year = ?
-              AND v.coverage != '' AND v.coverage IS NOT NULL
-              AND CAST(v.coverage AS REAL) > 0
-            GROUP BY v.country
+            GROUP BY c.name, v.year, cp.population
         )
-        GROUP BY Quality
-        ORDER BY CASE Quality
-            WHEN 'Excellent' THEN 1 WHEN 'Good' THEN 2
-            WHEN 'Fair'      THEN 3 WHEN 'Poor' THEN 4
-        END;
-    """, [int(sel_audit_year)])
-
-    # Build a quick lookup dict for the template
-    qc = {row['Quality']: row['cnt'] for row in quality_counts}
+    """
+    audit_params = [int(sel_audit_year)]
+    if sel_quality:
+        audit_base_query += " WHERE Quality = ?"
+        audit_params.append(sel_quality)
+        
+    audit_base_query += f" ORDER BY {order_clause};"
+    audit_data = query_db(audit_base_query, audit_params)
 
     return render_template('integrity.html',
-        years=years, diseases=diseases, audit_years=audit_years,
-        subtask_b=subtask_b,
-        audit_records=audit_records,
-        quality_counts=qc,
-        sel_year=sel_year, sel_disease=sel_disease,
-        sel_quality=sel_quality, sel_audit_year=sel_audit_year,
-        sort_col=sort_col, sort_dir=sort_dir,
-    )
-
+                           years=years, diseases=diseases, audit_years=audit_years,
+                           sel_year=sel_year, sel_disease=sel_disease,
+                           sel_quality=sel_quality, sel_audit_year=sel_audit_year,
+                           sort_col=sort_col, sort_dir=sort_dir,
+                           subtask_b=subtask_b, audit_data=audit_data)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True)
