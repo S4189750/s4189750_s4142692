@@ -1,42 +1,454 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="sidebar">
-    <h3>Audit Scopes</h3>
-    <form method="POST" action="/integrity">
-        <div class="form-group">
-            <label>Fiscal Target Audit Year</label>
-            <select name="year">
-                {% for y in years %}
-                <option value="{{ y.Year }}" {% if sel_year == y.Year %}selected{% endif %}>{{ y.Year }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <button type="submit">Audit System Files</button>
-    </form>
+
+<style>
+/* ── Hero ── */
+.int-hero {
+    background: linear-gradient(135deg, #064e3b 0%, #065f46 60%, #059669 100%);
+    padding: 3rem 2.5rem 2.5rem;
+    color: #fff;
+}
+.int-hero h1 { margin: 0 0 .4rem; font-size: 2rem; font-weight: 800; }
+.int-hero p  { margin: 0; opacity: .85; font-size: 1rem; }
+
+/* ── Page body ── */
+.int-body {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 2rem;
+}
+
+/* ── Quality stat cards row ── */
+.quality-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+.qcard {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    box-shadow: 0 2px 6px rgba(0,0,0,.04);
+}
+.qcard-left .qcard-label { font-size: .78rem; font-weight: 700; color: #64748b; margin-bottom: .2rem; }
+.qcard-left .qcard-value { font-size: 2rem; font-weight: 900; line-height: 1; }
+.qcard-left .qcard-sub   { font-size: .78rem; color: #94a3b8; margin-top: .2rem; }
+.qcard-icon { font-size: 1.3rem; }
+.qcard-excellent .qcard-value { color: #16a34a; }
+.qcard-good      .qcard-value { color: #2563eb; }
+.qcard-fair      .qcard-value { color: #d97706; }
+.qcard-poor      .qcard-value { color: #dc2626; }
+
+/* ── Section card ── */
+.section-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.5rem 1.8rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    margin-bottom: 2rem;
+}
+.section-card h2 { margin: 0 0 .3rem; font-size: 1.1rem; font-weight: 800; color: #0f172a; }
+.section-card .sub { font-size: .83rem; color: #64748b; margin: 0 0 1rem; }
+
+/* ── Methodology box ── */
+.methodology-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1.2rem 1.4rem;
+    margin-bottom: 2rem;
+}
+.methodology-box h3 { margin: 0 0 .5rem; font-size: 1rem; font-weight: 800; color: #0f172a; }
+.methodology-box p  { margin: 0 0 .7rem; font-size: .85rem; color: #475569; line-height: 1.6; }
+.methodology-box ul { margin: 0; padding-left: 0; list-style: none; }
+.methodology-box li { font-size: .84rem; color: #475569; padding: .15rem 0; }
+
+/* ── Filter form ── */
+.filter-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+    align-items: flex-end;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1.2rem;
+}
+.ff-group { display: flex; flex-direction: column; gap: .3rem; }
+.ff-group label {
+    font-size: .72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .4px; color: #64748b;
+}
+.ff-group select {
+    padding: .45rem .7rem; border: 1px solid #cbd5e1; border-radius: 6px;
+    font-size: .88rem; background: #fff; color: #0f172a; min-width: 120px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right .7rem center;
+}
+.btn-run {
+    padding: .5rem 1.2rem; background: #064e3b; color: #fff; border: none;
+    border-radius: 6px; font-weight: 700; font-size: .88rem; cursor: pointer;
+    transition: background .2s; align-self: flex-end;
+}
+.btn-run:hover { background: #065f46; }
+
+/* ── Data table ── */
+.data-table { width: 100%; border-collapse: collapse; font-size: .87rem; }
+.data-table thead tr { background: #f8fafc; border-bottom: 2px solid #e2e8f0; }
+.data-table th {
+    padding: .6rem 1rem; text-align: left; font-size: .72rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .5px; color: #64748b; white-space: nowrap;
+}
+.data-table th a { color: #64748b; text-decoration: none; display: inline-flex; align-items: center; gap: .25rem; }
+.data-table th a:hover { color: #0f172a; }
+.data-table td {
+    padding: .55rem 1rem; color: #334155;
+    border-bottom: 1px solid #f1f5f9; vertical-align: middle;
+}
+.data-table tbody tr:hover { background: #f8fafc; }
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+/* ── Global row highlight ── */
+.row-global td { background: #f0fdf4 !important; font-weight: 700; }
+.row-global td:first-child { color: #166534; }
+
+/* ── Rate badge ── */
+.rate-badge {
+    display: inline-block; padding: .2rem .55rem; border-radius: 20px;
+    font-size: .82rem; font-weight: 700;
+}
+.rate-high   { background: #fee2e2; color: #991b1b; }
+.rate-mid    { background: #fef9c3; color: #713f12; }
+.rate-global { background: #dcfce7; color: #166534; }
+
+/* ── Quality badge ── */
+.qbadge {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .2rem .6rem; border-radius: 20px; font-size: .8rem; font-weight: 700;
+}
+.qbadge-excellent { background: #dcfce7; color: #166534; }
+.qbadge-good      { background: #dbeafe; color: #1d4ed8; }
+.qbadge-fair      { background: #fef9c3; color: #713f12; }
+.qbadge-poor      { background: #fee2e2; color: #991b1b; }
+
+/* ── Discrepancy bar ── */
+.disc-wrap { display: flex; align-items: center; gap: .5rem; }
+.disc-bg   { flex: 1; background: #f1f5f9; border-radius: 6px; height: 8px; overflow: hidden; min-width: 60px; }
+.disc-fill { height: 100%; border-radius: 6px; }
+.disc-fill-ex   { background: #22c55e; }
+.disc-fill-good { background: #3b82f6; }
+.disc-fill-fair { background: #f59e0b; }
+.disc-fill-poor { background: #ef4444; }
+.disc-lbl { font-size: .8rem; font-weight: 700; min-width: 42px; text-align: right; }
+
+/* ── Audit table header row ── */
+.audit-header-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1rem;
+}
+.audit-header-row h2 { margin: 0; font-size: 1.1rem; font-weight: 800; color: #0f172a; }
+
+/* ── Recommendations ── */
+.reco-box {
+    border-radius: 8px; padding: 1rem 1.2rem; margin-bottom: .75rem;
+    border: 1px solid;
+}
+.reco-box h4 { margin: 0 0 .3rem; font-size: .9rem; font-weight: 800; display: flex; align-items: center; gap: .4rem; }
+.reco-box p  { margin: 0; font-size: .83rem; line-height: 1.5; }
+.reco-critical { background: #fff1f2; border-color: #fecdd3; }
+.reco-critical h4 { color: #be123c; }
+.reco-critical p  { color: #9f1239; }
+.reco-good { background: #f0fdf4; border-color: #bbf7d0; }
+.reco-good h4 { color: #15803d; }
+.reco-good p  { color: #166534; }
+
+/* ── Filter tags ── */
+.filter-tags { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+.filter-tag {
+    background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46;
+    border-radius: 20px; padding: .2rem .7rem; font-size: .8rem; font-weight: 600;
+}
+
+/* ── Empty state ── */
+.empty-state { text-align: center; padding: 2.5rem; color: #94a3b8; }
+.empty-state span { font-size: 2rem; display: block; margin-bottom: .5rem; }
+</style>
+
+<!-- Hero -->
+<div class="int-hero">
+    <h1>Data Integrity &amp; Population Analysis</h1>
+    <p>Audit database accuracy and cross-reference vaccination records with demographic data</p>
 </div>
 
-<div class="workspace">
-    <h2>Database Integrity Ledger (Exceeding Global Average Baselines)</h2>
-    
-    <div style="background-color: #27272a; padding: 1rem; border-left: 4px solid #38bdf8; margin-bottom: 1.5rem;">
-        📊 <strong>Calculated Global Baselines:</strong> Average Infection Incidence Rate per 100,000 population for {{ sel_year }} is: 
-        <strong style="color: #38bdf8;">{{ "%.2f"|format(global_avg) }} cases</strong>
+<div class="int-body">
+
+    <!-- ── Quality stat cards ── -->
+    <div class="quality-cards">
+        <div class="qcard qcard-excellent">
+            <div class="qcard-left">
+                <div class="qcard-label">Excellent Quality</div>
+                <div class="qcard-value">{{ quality_counts.get('Excellent', 0) }}</div>
+                <div class="qcard-sub">countries</div>
+            </div>
+            <div class="qcard-icon">✅</div>
+        </div>
+        <div class="qcard qcard-good">
+            <div class="qcard-left">
+                <div class="qcard-label">Good Quality</div>
+                <div class="qcard-value">{{ quality_counts.get('Good', 0) }}</div>
+                <div class="qcard-sub">countries</div>
+            </div>
+            <div class="qcard-icon">☑️</div>
+        </div>
+        <div class="qcard qcard-fair">
+            <div class="qcard-left">
+                <div class="qcard-label">Fair Quality</div>
+                <div class="qcard-value">{{ quality_counts.get('Fair', 0) }}</div>
+                <div class="qcard-sub">countries</div>
+            </div>
+            <div class="qcard-icon">⚠️</div>
+        </div>
+        <div class="qcard qcard-poor">
+            <div class="qcard-left">
+                <div class="qcard-label">Poor Quality</div>
+                <div class="qcard-value">{{ quality_counts.get('Poor', 0) }}</div>
+                <div class="qcard-sub">countries</div>
+            </div>
+            <div class="qcard-icon">❌</div>
+        </div>
     </div>
 
-    <table>
-        <thead>
-            <tr><th>Country Identity Name</th><th>Infection Class Type</th><th>Reported Gross Cases</th><th>Normalized Cases per 100k</th></tr>
-        </thead>
-        <tbody>
-            {% for row in records %}
-            <tr>
-                <td>{{ row.CountryName }}</td>
-                <td>{{ row.InfectionType }}</td>
-                <td>{{ "{:,}".format(row.ReportedCases) }}</td>
-                <td><span class="badge badge-danger">{{ "%.2f"|format(row.CasesPer100k) }}</span></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+    <!-- ── Methodology box ── -->
+    <div class="methodology-box">
+        <h3>Data Quality Methodology</h3>
+        <p>Quality ratings are based on how far average vaccination coverage deviates from the 100% target. Technical auditors can sort and filter this data to identify reporting gaps and ensure internal consistency.</p>
+        <ul>
+            <li>✅ <strong>Excellent:</strong> &lt;2% deviation from target</li>
+            <li>☑️ <strong>Good:</strong> 2–5% deviation</li>
+            <li>⚠️ <strong>Fair:</strong> 5–10% deviation</li>
+            <li>❌ <strong>Poor:</strong> &gt;10% deviation — requires investigation</li>
+        </ul>
+    </div>
+
+    <!-- ── SUB-TASK B: Above-average infection rate ── -->
+    <div class="section-card">
+        <h2>Sub-Task B — Global &amp; Above-Average Infection Rates per 100,000 People</h2>
+        <p class="sub">
+            The global average is shown first. Only countries whose infection rate exceeds that global average are listed below it.
+        </p>
+
+        <form method="POST" action="/integrity">
+            <div class="filter-form">
+                <div class="ff-group">
+                    <label>Infection Type</label>
+                    <select name="disease">
+                        {% for d in diseases %}
+                        <option value="{{ d.Disease }}" {% if sel_disease == d.Disease %}selected{% endif %}>{{ d.Disease }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="ff-group">
+                    <label>Year</label>
+                    <select name="year">
+                        {% for y in years %}
+                        <option value="{{ y.Year }}" {% if sel_year == y.Year|string %}selected{% endif %}>{{ y.Year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <!-- hidden fields so the audit table form state survives -->
+                <input type="hidden" name="audit_year" value="{{ sel_audit_year }}">
+                <input type="hidden" name="quality"    value="{{ sel_quality }}">
+                <input type="hidden" name="sort_col"   value="{{ sort_col }}">
+                <input type="hidden" name="sort_dir"   value="{{ sort_dir }}">
+                <button type="submit" class="btn-run">Search</button>
+            </div>
+        </form>
+
+        <div class="filter-tags">
+            <span class="filter-tag">🦠 {{ sel_disease }}</span>
+            <span class="filter-tag">📅 {{ sel_year }}</span>
+            {% if subtask_b %}
+            <span class="filter-tag">📊 {{ subtask_b|length - 1 }} countries above average</span>
+            {% endif %}
+        </div>
+
+        {% if subtask_b %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Country</th>
+                    <th>Infection Type</th>
+                    <th>Infection per 100,000 People</th>
+                    <th>Year</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in subtask_b %}
+                <tr {% if row.is_country == 0 %}class="row-global"{% endif %}>
+                    <td>
+                        {% if row.is_country == 0 %}
+                            🌐 <strong>{{ row.Country }}</strong>
+                            <span style="font-size:.75rem;background:#dcfce7;color:#166534;padding:.1rem .4rem;border-radius:10px;margin-left:.4rem;">Global Average</span>
+                        {% else %}
+                            📍 {{ row.Country }}
+                        {% endif %}
+                    </td>
+                    <td>{{ row.InfectionType }}</td>
+                    <td>
+                        {% if row.is_country == 0 %}
+                            <span class="rate-badge rate-global">{{ row.RatePer100k }}</span>
+                        {% elif row.RatePer100k > 10 %}
+                            <span class="rate-badge rate-high">{{ row.RatePer100k }}</span>
+                        {% else %}
+                            <span class="rate-badge rate-mid">{{ row.RatePer100k }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ row.Year }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <span>🔍</span>
+            No data found for {{ sel_disease }} in {{ sel_year }}.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ── Population & Vaccination Audit Table ── -->
+    <div class="section-card">
+        <div class="audit-header-row">
+            <div>
+                <h2>Population &amp; Vaccination Audit Table</h2>
+                <p class="sub" style="margin:0;">Click column headers to sort &bull; Filter by data quality</p>
+            </div>
+        </div>
+
+        <form method="POST" action="/integrity">
+            <div class="filter-form">
+                <div class="ff-group">
+                    <label>Audit Year</label>
+                    <select name="audit_year">
+                        {% for y in audit_years %}
+                        <option value="{{ y.Year }}" {% if sel_audit_year == y.Year|string %}selected{% endif %}>{{ y.Year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="ff-group">
+                    <label>Quality Filter</label>
+                    <select name="quality">
+                        <option value="">All quality levels</option>
+                        {% for q in ['Excellent','Good','Fair','Poor'] %}
+                        <option value="{{ q }}" {% if sel_quality == q %}selected{% endif %}>{{ q }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <!-- hidden fields so sub-task B state survives -->
+                <input type="hidden" name="year"    value="{{ sel_year }}">
+                <input type="hidden" name="disease" value="{{ sel_disease }}">
+                <input type="hidden" name="sort_col" value="{{ sort_col }}">
+                <input type="hidden" name="sort_dir" value="{{ sort_dir }}">
+                <button type="submit" class="btn-run">Apply</button>
+            </div>
+        </form>
+
+        {% if audit_records %}
+        <div style="overflow-x:auto;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    {% set cols = [('Country','Country'),('Year','Year'),('AvgCoverage','Avg Coverage'),('DiscrepancyPct','Discrepancy %'),('Quality','Quality')] %}
+                    {% for col_id, col_label in cols %}
+                    {% set new_dir = 'asc' if (sort_col == col_id and sort_dir == 'desc') else 'desc' %}
+                    <th>
+                        <form method="POST" action="/integrity" style="display:inline;">
+                            <input type="hidden" name="year"       value="{{ sel_year }}">
+                            <input type="hidden" name="disease"    value="{{ sel_disease }}">
+                            <input type="hidden" name="audit_year" value="{{ sel_audit_year }}">
+                            <input type="hidden" name="quality"    value="{{ sel_quality }}">
+                            <input type="hidden" name="sort_col"   value="{{ col_id }}">
+                            <input type="hidden" name="sort_dir"   value="{{ new_dir }}">
+                            <button type="submit" style="background:none;border:none;cursor:pointer;font:inherit;color:#64748b;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:0;display:flex;align-items:center;gap:.25rem;">
+                                {{ col_label }}
+                                {% if sort_col == col_id %}{{ '↑' if sort_dir == 'asc' else '↓' }}{% else %}↕{% endif %}
+                            </button>
+                        </form>
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in audit_records %}
+                <tr>
+                    <td><strong>{{ row.Country }}</strong></td>
+                    <td>{{ row.Year }}</td>
+                    <td>{{ row.AvgCoverage }}%</td>
+                    <td>
+                        {% set d = row.DiscrepancyPct %}
+                        {% if d < 2 %}{% set cls = 'disc-fill-ex'   %}
+                        {% elif d < 5 %}{% set cls = 'disc-fill-good' %}
+                        {% elif d < 10 %}{% set cls = 'disc-fill-fair' %}
+                        {% else %}{% set cls = 'disc-fill-poor' %}{% endif %}
+                        <div class="disc-wrap">
+                            <div class="disc-bg">
+                                <div class="disc-fill {{ cls }}" style="width:{{ [d * 5, 100]|min }}%"></div>
+                            </div>
+                            <span class="disc-lbl">{{ d }}%</span>
+                        </div>
+                    </td>
+                    <td>
+                        {% set q = row.Quality %}
+                        {% if q == 'Excellent' %}
+                            <span class="qbadge qbadge-excellent">✅ Excellent</span>
+                        {% elif q == 'Good' %}
+                            <span class="qbadge qbadge-good">☑️ Good</span>
+                        {% elif q == 'Fair' %}
+                            <span class="qbadge qbadge-fair">⚠️ Fair</span>
+                        {% else %}
+                            <span class="qbadge qbadge-poor">❌ Poor</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <span>📊</span>
+            No audit records found for the selected filters.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ── Audit Recommendations ── -->
+    <div class="section-card">
+        <h2>Audit Recommendations</h2>
+        {% set poor_count = quality_counts.get('Poor', 0) %}
+        {% set exc_count  = quality_counts.get('Excellent', 0) %}
+        {% if poor_count > 0 %}
+        <div class="reco-box reco-critical">
+            <h4>❌ Critical Data Issues Detected</h4>
+            <p>{{ poor_count }} countr{{ 'y has' if poor_count == 1 else 'ies have' }} poor data quality ratings. Recommend immediate investigation of source data and reporting processes.</p>
+        </div>
+        {% endif %}
+        {% if exc_count > 0 %}
+        <div class="reco-box reco-good">
+            <h4>✅ High-Quality Data Sources</h4>
+            <p>{{ exc_count }} countr{{ 'y' if exc_count == 1 else 'ies' }} report{{ 's' if exc_count == 1 else '' }} vaccination coverage within 2% of the 100% target — considered reliable for policy decisions.</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div><!-- /int-body -->
+
 {% endblock %}
