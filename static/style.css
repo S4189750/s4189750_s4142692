@@ -410,8 +410,8 @@ nav a:hover {
 }
 
 .team-photo {
-    width: 180px; /* Larger size for team members */
-    height: 180px;
+    width: 200px; /* Larger size for team members */
+    height: 200px;
     border-radius: 50%;
     object-fit: cover; /* Fixes vertical stretching */
     border: 5px solid #ffffff;

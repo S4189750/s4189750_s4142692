@@ -5,6 +5,37 @@ app = Flask(__name__)
 # Built-in fallback helper registration 
 app.jinja_env.globals.update(int=int)
 DB_FILE = "immunisation.db"
+conn = sqlite3.connect(DB_FILE)
+cur = conn.cursor()
+
+# 1. Ensure the table exists
+cur.execute("""
+    CREATE TABLE IF NOT EXISTS ProjectMetadata (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        identifier TEXT,
+        role TEXT NOT NULL
+    );
+""")
+
+# 2. Clear out the old placeholder data
+cur.execute("DELETE FROM ProjectMetadata;")
+
+# 3. Insert the exact Team Members and Personas
+metadata_entries = [
+    ("Hiya Rana", "s4142692", "Team Member"),
+    ("Bach Nguyen Ho Viet", "s4189750", "Team Member"),
+    ("Marie Jose", "Level 1 User", "Persona"),
+    ("Derek Nguyen", "Level 2/3 User", "Persona")
+]
+
+cur.executemany("""
+    INSERT INTO ProjectMetadata (name, identifier, role) 
+    VALUES (?, ?, ?);
+""", metadata_entries)
+
+conn.commit()
+conn.close()
 
 def query_db(query, args=(), one=False):
     """Helper function to cleanly open, execute, and pull data rows from SQLite."""
@@ -67,7 +98,15 @@ def index():
 
 @app.route('/mission')
 def mission():
-    return render_template('mission.html')
+    # 1. Fetch all records from the ProjectMetadata table
+    raw_metadata = query_db("SELECT * FROM ProjectMetadata;")
+    
+    # 2. Convert the sqlite3.Row objects to standard dictionaries
+    # This ensures Jinja filters like selectattr work perfectly
+    metadata = rows_to_dicts(raw_metadata)
+    
+    # 3. Pass the metadata variable to the template
+    return render_template('mission.html', metadata=metadata)
 
 
 # ==========================================
@@ -217,9 +256,11 @@ def economic():
         WHERE it.description = ? AND i.year = ? AND e.phase = ? AND i.cases > 0
         ORDER BY {order_clause};
     """
-    table1 = query_db(t1_query, [sel_disease, int(sel_year), sel_left_econ])
+    # Converted to dicts to allow JSON serialization in the template
+    table1 = rows_to_dicts(query_db(t1_query, [sel_disease, int(sel_year), sel_left_econ]))
 
-    table2 = query_db("""
+    # Converted to dicts to allow JSON serialization in the template
+    table2 = rows_to_dicts(query_db("""
         SELECT
             it.description            AS Disease,
             e.phase                   AS EconPhase,
@@ -233,7 +274,7 @@ def economic():
         WHERE it.description = ? AND i.year = ?
         GROUP BY e.phase, i.year
         ORDER BY TotalCases DESC;
-    """, [sel_disease, int(sel_year)])
+    """, [sel_disease, int(sel_year)]))
 
     def get_trend(econ_phase):
         rows = query_db("""
@@ -324,8 +365,6 @@ def economic():
         sort_col=sort_col, sort_dir=sort_dir,
         yr_start=yr_start, yr_end=yr_end,
     )
-
-
 # ==========================================
 # LEVEL 3 ROUTES: Deep Analysis Subqueries
 # ==========================================
@@ -482,11 +521,7 @@ def improvement():
 
 
 # ==========================================
-# Integrity route: Finished & Deduplicated
-# ==========================================
-
-# ==========================================
-# REPLACE your entire /integrity route in app.py with this:
+# Integrity route
 # ==========================================
 
 @app.route('/integrity', methods=['GET', 'POST'])

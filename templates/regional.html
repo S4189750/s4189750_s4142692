@@ -148,7 +148,6 @@
     color: #64748b;
     white-space: nowrap;
 }
-/* Sortable th button style */
 .data-table th form { display: inline; }
 .sort-btn {
     background: none;
@@ -238,6 +237,153 @@
     font-size: .8rem;
     font-weight: 600;
 }
+
+/* ── Regional Herd Immunity Summary ── */
+.herd-summary-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.4rem 1.8rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    margin-bottom: 2rem;
+}
+.herd-summary-card .herd-header {
+    display: flex;
+    align-items: baseline;
+    gap: .6rem;
+    margin-bottom: .25rem;
+}
+.herd-summary-card .herd-header h2 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+}
+.herd-summary-card .herd-subtext {
+    font-size: .83rem;
+    color: #64748b;
+    margin: 0 0 1.2rem;
+}
+.herd-summary-card .herd-subtext strong { color: #0f172a; }
+
+.herd-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: .85rem;
+}
+.herd-region-tile {
+    border-radius: 10px;
+    padding: .95rem 1.1rem;
+    border: 1px solid;
+    position: relative;
+    overflow: hidden;
+}
+.herd-region-tile::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 4px;
+    height: 100%;
+    border-radius: 0 10px 10px 0;
+}
+/* Herd immunity achieved (≥95%) */
+.herd-achieved {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+.herd-achieved::after { background: #16a34a; }
+.herd-achieved .herd-status-label { color: #15803d; }
+/* Approaching (90–94%) */
+.herd-approaching {
+    background: #fefce8;
+    border-color: #fde68a;
+}
+.herd-approaching::after { background: #ca8a04; }
+.herd-approaching .herd-status-label { color: #92400e; }
+/* Below threshold (<90%) */
+.herd-below {
+    background: #fff1f2;
+    border-color: #fecdd3;
+}
+.herd-below::after { background: #e11d48; }
+.herd-below .herd-status-label { color: #be123c; }
+
+.herd-region-name {
+    font-size: .82rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: .5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.herd-coverage-row {
+    display: flex;
+    align-items: baseline;
+    gap: .3rem;
+    margin-bottom: .4rem;
+}
+.herd-coverage-num {
+    font-size: 1.6rem;
+    font-weight: 900;
+    line-height: 1;
+    color: #0f172a;
+}
+.herd-coverage-unit {
+    font-size: .78rem;
+    color: #64748b;
+    font-weight: 600;
+}
+.herd-bar-wrap {
+    background: #e2e8f0;
+    border-radius: 6px;
+    height: 6px;
+    margin-bottom: .5rem;
+    overflow: hidden;
+}
+.herd-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width .4s ease;
+}
+.herd-achieved   .herd-bar-fill { background: linear-gradient(90deg, #16a34a, #4ade80); }
+.herd-approaching .herd-bar-fill { background: linear-gradient(90deg, #ca8a04, #facc15); }
+.herd-below      .herd-bar-fill { background: linear-gradient(90deg, #e11d48, #fb7185); }
+
+.herd-status-label {
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+}
+.herd-countries-sub {
+    font-size: .75rem;
+    color: #94a3b8;
+    margin-top: .25rem;
+}
+
+/* Threshold legend */
+.herd-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .6rem 1.2rem;
+    margin-top: 1.1rem;
+    padding-top: .9rem;
+    border-top: 1px solid #f1f5f9;
+}
+.herd-legend-item {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    font-size: .76rem;
+    color: #475569;
+}
+.herd-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
 </style>
 
 <!-- ── Hero ── -->
@@ -254,7 +400,6 @@
         <div class="sidebar-title">🔽 Filters</div>
 
         <form method="POST" action="/regional">
-            <!-- carry sort state when filters are re-applied -->
             <input type="hidden" name="t1_sort"     value="{{ t1_sort }}">
             <input type="hidden" name="t1_sort_dir" value="{{ t1_sort_dir }}">
             <input type="hidden" name="t2_sort"     value="{{ t2_sort }}">
@@ -317,6 +462,70 @@
             {% if sel_region %}<span class="filter-tag">🌍 {{ sel_region }}</span>{% endif %}
         </div>
 
+        <!-- ── REGIONAL HERD IMMUNITY SUMMARY ── -->
+        {% if table2 %}
+        <div class="herd-summary-card">
+            <div class="herd-header">
+                <h2>Regional Vaccination &amp; Herd Immunity Summary</h2>
+            </div>
+            <p class="herd-subtext">
+                Average coverage and herd immunity status per region for
+                <strong>{{ sel_antigen }}</strong> in <strong>{{ sel_year }}</strong>.
+                Herd immunity is considered achieved at <strong>≥ 95%</strong> coverage,
+                approaching at <strong>90–94%</strong>, and below threshold under <strong>90%</strong>.
+            </p>
+
+            <div class="herd-grid">
+                {% for row in table2 %}
+                {% set avg = row.AvgCoverage %}
+                {% if avg >= 95 %}
+                    {% set tile_class = 'herd-achieved' %}
+                    {% set status_icon = '🛡️' %}
+                    {% set status_text = 'Herd Immunity Achieved' %}
+                {% elif avg >= 90 %}
+                    {% set tile_class = 'herd-approaching' %}
+                    {% set status_icon = '⚠️' %}
+                    {% set status_text = 'Approaching Threshold' %}
+                {% else %}
+                    {% set tile_class = 'herd-below' %}
+                    {% set status_icon = '❌' %}
+                    {% set status_text = 'Below Threshold' %}
+                {% endif %}
+
+                <div class="herd-region-tile {{ tile_class }}">
+                    <div class="herd-region-name" title="{{ row.RegionName }}">{{ row.RegionName }}</div>
+                    <div class="herd-coverage-row">
+                        <span class="herd-coverage-num">{{ avg }}</span>
+                        <span class="herd-coverage-unit">% avg coverage</span>
+                    </div>
+                    <div class="herd-bar-wrap">
+                        <div class="herd-bar-fill" style="width: {{ [avg, 100]|min }}%;"></div>
+                    </div>
+                    <div class="herd-status-label">{{ status_icon }} {{ status_text }}</div>
+                    <div class="herd-countries-sub">
+                        {{ row.CountriesAt90 }} of {{ row.CountriesMet }} countries ≥ 90%
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="herd-legend">
+                <span class="herd-legend-item">
+                    <span class="herd-legend-dot" style="background:#16a34a;"></span>
+                    ≥ 95% — Herd immunity achieved
+                </span>
+                <span class="herd-legend-item">
+                    <span class="herd-legend-dot" style="background:#ca8a04;"></span>
+                    90–94% — Approaching threshold
+                </span>
+                <span class="herd-legend-item">
+                    <span class="herd-legend-dot" style="background:#e11d48;"></span>
+                    &lt; 90% — Below threshold
+                </span>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- ── TABLE 1 ── -->
         <div class="section-card">
             <div class="section-card-header">
@@ -334,7 +543,6 @@
             <table class="data-table">
                 <thead>
                     <tr>
-                        <!-- Sortable: Country A→Z / Z→A -->
                         <th>
                             <form method="POST" action="/regional">
                                 <input type="hidden" name="region"      value="{{ sel_region or '' }}">
@@ -353,7 +561,6 @@
                         <th>Region</th>
                         <th>Antigen</th>
                         <th>Year</th>
-                        <!-- Sortable: Coverage % high→low / low→high -->
                         <th>
                             <form method="POST" action="/regional">
                                 <input type="hidden" name="region"      value="{{ sel_region or '' }}">
@@ -423,7 +630,6 @@
                         <th>Region</th>
                         <th>Antigen</th>
                         <th>Year</th>
-                        <!-- Sortable: Countries ≥ 90% -->
                         <th>
                             <form method="POST" action="/regional">
                                 <input type="hidden" name="region"      value="{{ sel_region or '' }}">
@@ -439,7 +645,6 @@
                                 </button>
                             </form>
                         </th>
-                        <!-- Sortable: Avg Coverage — default DESC so ≥90% regions appear first -->
                         <th>
                             <form method="POST" action="/regional">
                                 <input type="hidden" name="region"      value="{{ sel_region or '' }}">

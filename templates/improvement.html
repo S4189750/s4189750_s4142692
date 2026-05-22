@@ -309,35 +309,6 @@
             </div>
         </div>
 
-        <!-- ── Zero-Dose Population Trends ── -->
-        <div class="zero-section">
-            <h2>🔴 Zero-Dose Population Trends</h2>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Year</th>
-                        <th>Countries &lt; 90% Coverage</th>
-                        <th>Global Coverage</th>
-                        <th>Income Gap</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in zero_dose %}
-                    <tr>
-                        <td><strong>{{ row.Year }}</strong></td>
-                        <td>
-                            <span class="pill {% if row.ZeroDoseCount > 70 %}pill-red{% elif row.ZeroDoseCount > 50 %}pill-amber{% else %}pill-green{% endif %}">
-                                {{ row.ZeroDoseCount }}
-                            </span>
-                        </td>
-                        <td>{{ row.GlobalCoverage | int }}%</td>
-                        <td>{{ row.IncomeGap | int }} pp</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
         <!-- ── Sub-Task A: Biggest Improvement in Vaccination Rates ── -->
         <div class="section-card">
             <h2>Sub-Task A — Countries with the Biggest Vaccination Rate Jump</h2>
