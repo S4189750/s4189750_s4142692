@@ -1,31 +1,60 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html> <!--For modern browser compatibility -->
+
+<html lang="en"> 
+
 <head>
-    <meta charset="UTF-8">
-    <title>Global Vaccine Impact Explorer</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
+    <meta charset="UTF-8"> 
+
+    <title>Global Vaccine Impact Explorer</title> 
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">  <!-- Link to external CSS stylesheet for consistent styling across pages -->
+    </head>
+
 <body>
 
+    <!-- ===== Website Header Section ===== -->
     <header>
+
+        <!-- Website logo/title displayed at the top -->
         <div class="logo">🌐 Global Vaccine Impact Explorer</div>
+
+        <!-- Navigation menu containing links to all website pages -->
         <nav>
             <a href="/">Home</a>
+            <!-- Link to homepage -->
+
             <a href="/mission">Mission</a>
+            <!-- Link to mission/about page -->
+
             <a href="/regional">Regional Analytics</a>
+            <!-- Link to regional vaccination analytics page -->
+
             <a href="/economic">Economic Trends</a>
+            <!-- Link to economic trends and vaccination insights -->
+
             <a href="/improvement">Antigen Analytics</a>
+            <!-- Link to antigen/vaccine improvement analysis -->
+
             <a href="/integrity">Data Integrity</a>
+            <!-- Link to data validation and integrity checks -->
         </nav>
     </header>
 
+    <!-- ===== Main Content Area ===== -->
     <div class="main-container">
+
+        <!-- Flask/Jinja template block where page-specific content is inserted -->
         {% block content %}
         {% endblock %}
+
     </div>
 
+    <!-- ===== Footer Status Bar ===== -->
     <div class="status-footer">
+
+        <!-- To display database connection and system status -->
         ⚙️ System Online | Connected to Live SQLite Database: immunisation.db
+
     </div>
 
 </body>

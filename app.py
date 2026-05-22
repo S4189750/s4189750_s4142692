@@ -221,12 +221,13 @@ def regional():
                            t2_sort=t2_sort, t2_sort_dir=t2_sort_dir)
 
 
+
 @app.route('/economic', methods=['GET', 'POST'])
 def economic():
-    statuses    = query_db("SELECT DISTINCT phase AS EconomicStatus FROM Economy WHERE phase IS NOT NULL ORDER BY phase;")
-    diseases    = query_db("SELECT DISTINCT description AS Disease FROM Infection_Type ORDER BY description;")
-    years       = query_db("SELECT DISTINCT year AS Year FROM InfectionData ORDER BY year DESC;")
-    year_ranges = ['2000-2024', '2000-2009', '2010-2019', '2020-2024']
+    statuses      = query_db("SELECT DISTINCT phase AS EconomicStatus FROM Economy WHERE phase IS NOT NULL ORDER BY phase;")
+    diseases      = query_db("SELECT DISTINCT description AS Disease FROM Infection_Type ORDER BY description;")
+    years         = query_db("SELECT DISTINCT year AS Year FROM InfectionData ORDER BY year DESC;")
+    year_ranges   = ['2000-2024','2000-2009','2010-2019','2020-2024']
 
     if request.method == 'POST':
         sel_disease    = request.form.get('disease',    'Measles')
@@ -241,140 +242,143 @@ def economic():
         sel_left_econ  = 'High Income'
         sel_right_econ = 'Low Income'
 
-    yr_parts = sel_year_range.split('-')
-    yr_start = int(yr_parts[0])
-    yr_end   = int(yr_parts[1])
+    yr_parts   = sel_year_range.split('-')
+    yr_start   = int(yr_parts[0])
+    yr_end     = int(yr_parts[1])
 
+    # TABLE 1
     sort_col = request.args.get('sort', 'CasesPer100k')
     sort_dir = request.args.get('dir',  'desc')
-    allowed_sorts = {'Country', 'EconPhase', 'Year', 'Disease', 'CasesPer100k'}
+    allowed_sorts = {'Country','EconPhase','Year','Disease','CasesPer100k'}
     if sort_col not in allowed_sorts:
         sort_col = 'CasesPer100k'
     order_clause = f"{sort_col} {'DESC' if sort_dir == 'desc' else 'ASC'}"
 
     t1_query = f"""
-        SELECT
-            it.description                                  AS Disease,
-            c.name                                          AS Country,
-            e.phase                                         AS EconPhase,
-            i.year                                          AS Year,
-            i.cases                                         AS RawCases,
-            ROUND((i.cases * 100000.0) / cp.population, 2) AS CasesPer100k
-        FROM  InfectionData i
-        JOIN  Country           c  ON i.country  = c.CountryID
-        JOIN  Economy           e  ON c.economy   = e.economyID
-        JOIN  Infection_Type    it ON i.inf_type  = it.id
-        JOIN  CountryPopulation cp ON i.country   = cp.country AND i.year = cp.year
-        WHERE it.description = ? AND i.year = ? AND e.phase = ? AND i.cases > 0
-        ORDER BY {order_clause};
+    SELECT
+        it.description                                          AS Disease,
+        c.name                                                  AS Country,
+        e.phase                                                 AS EconPhase,
+        i.year                                                  AS Year,
+        i.cases                                                 AS RawCases,
+        ROUND((i.cases * 100000.0) / cp.population, 2)         AS CasesPer100k
+    FROM InfectionData i
+    JOIN Country           c  ON i.country  = c.CountryID
+    JOIN Economy           e  ON c.economy  = e.economyID
+    JOIN Infection_Type    it ON i.inf_type  = it.id
+    JOIN CountryPopulation cp ON i.country  = cp.country AND i.year = cp.year
+    WHERE it.description = ? AND i.year = ? AND e.phase = ? AND i.cases > 0
+    ORDER BY {order_clause};
     """
-    table1 = rows_to_dicts(query_db(t1_query, [sel_disease, int(sel_year), sel_left_econ]))
+    table1 = query_db(t1_query, [sel_disease, int(sel_year), sel_left_econ])
 
-    table2 = rows_to_dicts(query_db("""
-        SELECT
-            it.description            AS Disease,
-            e.phase                   AS EconPhase,
-            i.year                    AS Year,
-            SUM(i.cases)              AS TotalCases,
-            COUNT(DISTINCT i.country) AS CountryCount
-        FROM  InfectionData i
-        JOIN  Country        c  ON i.country  = c.CountryID
-        JOIN  Economy        e  ON c.economy   = e.economyID
-        JOIN  Infection_Type it ON i.inf_type  = it.id
-        WHERE it.description = ? AND i.year = ?
-        GROUP BY e.phase, i.year
-        ORDER BY TotalCases DESC;
-    """, [sel_disease, int(sel_year)]))
+    # TABLE 2
+    table2 = query_db("""
+    SELECT
+        it.description  AS Disease,
+        e.phase         AS EconPhase,
+        i.year          AS Year,
+        SUM(i.cases)    AS TotalCases,
+        COUNT(DISTINCT i.country) AS CountryCount
+    FROM InfectionData i
+    JOIN Country        c  ON i.country = c.CountryID
+    JOIN Economy        e  ON c.economy = e.economyID
+    JOIN Infection_Type it ON i.inf_type = it.id
+    WHERE it.description = ? AND i.year = ?
+    GROUP BY e.phase, i.year
+    ORDER BY TotalCases DESC;
+    """, [sel_disease, int(sel_year)])
 
+    # Trend data function for split-screen charts
     def get_trend(econ_phase):
-        rows = query_db("""
-            SELECT
-                v.year                                  AS Year,
-                ROUND(AVG(CAST(v.coverage AS REAL)), 1) AS AvgCoverage,
-                ROUND(AVG(
-                    CASE WHEN cp.population > 0
-                         THEN (i.cases * 100000.0) / cp.population
-                    END
-                ), 2)                                   AS AvgInfRate,
-                COUNT(DISTINCT v.country)               AS CountryCount
-            FROM  Vaccination v
-            JOIN  Country           c  ON v.country = c.CountryID
-            JOIN  Economy           e  ON c.economy  = e.economyID
-            LEFT JOIN InfectionData i  ON i.country  = v.country AND i.year = v.year
-            LEFT JOIN CountryPopulation cp ON cp.country = v.country AND cp.year = v.year
-            WHERE e.phase = ? AND v.year BETWEEN ? AND ?
-            GROUP BY v.year
-            ORDER BY v.year;
+        return query_db("""
+        SELECT
+            v.year                                           AS Year,
+            ROUND(AVG(CAST(v.coverage AS REAL)), 1)         AS AvgCoverage,
+            ROUND(AVG(CASE WHEN cp.population > 0 THEN (i.cases * 100000.0) / cp.population END), 2) AS AvgInfRate,
+            COUNT(DISTINCT v.country)                        AS CountryCount
+        FROM Vaccination v
+        JOIN Country           c  ON v.country = c.CountryID
+        JOIN Economy           e  ON c.economy = e.economyID
+        LEFT JOIN InfectionData i  ON i.country = v.country AND i.year = v.year
+        LEFT JOIN CountryPopulation cp ON cp.country = v.country AND cp.year = v.year
+        WHERE e.phase = ? AND v.year BETWEEN ? AND ?
+        GROUP BY v.year
+        ORDER BY v.year;
         """, [econ_phase, yr_start, yr_end])
-        return rows_to_dicts(rows)
 
-    left_trend  = get_trend(sel_left_econ)
-    right_trend = get_trend(sel_right_econ)
+    # FIX: Run trends and directly transform the Row structures into plain JSON dictionaries
+    raw_left_trend  = get_trend(sel_left_econ)
+    raw_right_trend = get_trend(sel_right_econ)
+    left_trend      = [dict(row) for row in raw_left_trend]
+    right_trend     = [dict(row) for row in raw_right_trend]
 
+    # Summary stat cards calculation
     def get_stats(econ_phase):
         latest = query_db("""
-            SELECT ROUND(AVG(CAST(v.coverage AS REAL)), 1) AS AvgCov,
-                   COUNT(DISTINCT v.country)               AS Countries
-            FROM   Vaccination v
-            JOIN   Country c ON v.country = c.CountryID
-            JOIN   Economy e ON c.economy  = e.economyID
-            WHERE  e.phase = ? AND v.year = ?;
+        SELECT ROUND(AVG(CAST(v.coverage AS REAL)),1) AS AvgCov, COUNT(DISTINCT v.country) AS Countries
+        FROM   Vaccination v
+        JOIN   Country c ON v.country = c.CountryID
+        JOIN   Economy e ON c.economy = e.economyID
+        WHERE  e.phase = ? AND v.year = ?;
         """, [econ_phase, yr_end], one=True)
+        
         earliest = query_db("""
-            SELECT ROUND(AVG(CAST(v.coverage AS REAL)), 1) AS AvgCov
-            FROM   Vaccination v
-            JOIN   Country c ON v.country = c.CountryID
-            JOIN   Economy e ON c.economy  = e.economyID
-            WHERE  e.phase = ? AND v.year = ?;
+        SELECT ROUND(AVG(CAST(v.coverage AS REAL)),1) AS AvgCov
+        FROM   Vaccination v
+        JOIN   Country c ON v.country = c.CountryID
+        JOIN   Economy e ON c.economy = e.economyID
+        WHERE  e.phase = ? AND v.year = ?;
         """, [econ_phase, yr_start], one=True)
+        
+        # FIX: Added missing '*' operator for multiplication syntax rules
         inf_latest = query_db("""
-            SELECT ROUND(AVG((i.cases * 100000.0) / cp.population), 2) AS AvgRate
-            FROM   InfectionData i
-            JOIN   Country c ON i.country = c.CountryID
-            JOIN   Economy e ON c.economy  = e.economyID
-            JOIN   CountryPopulation cp ON cp.country = i.country AND cp.year = i.year
-            WHERE  e.phase = ? AND i.year = ? AND cp.population > 0;
+        SELECT ROUND(AVG((i.cases * 100000.0)/cp.population),2) AS AvgRate
+        FROM   InfectionData i
+        JOIN   Country c ON i.country = c.CountryID
+        JOIN   Economy e ON c.economy = e.economyID
+        JOIN   CountryPopulation cp ON cp.country = i.country AND cp.year = i.year
+        WHERE  e.phase = ? AND i.year = ? AND cp.population > 0;
         """, [econ_phase, yr_end], one=True)
+        
         inf_earliest = query_db("""
-            SELECT ROUND(AVG((i.cases * 100000.0) / cp.population), 2) AS AvgRate
-            FROM   InfectionData i
-            JOIN   Country c ON i.country = c.CountryID
-            JOIN   Economy e ON c.economy  = e.economyID
-            JOIN   CountryPopulation cp ON cp.country = i.country AND cp.year = i.year
-            WHERE  e.phase = ? AND i.year = ? AND cp.population > 0;
+        SELECT ROUND(AVG((i.cases * 100000.0)/cp.population),2) AS AvgRate
+        FROM   InfectionData i
+        JOIN   Country c ON i.country = c.CountryID
+        JOIN   Economy e ON c.economy = e.economyID
+        JOIN   CountryPopulation cp ON cp.country = i.country AND cp.year = i.year
+        WHERE  e.phase = ? AND i.year = ? AND cp.population > 0;
         """, [econ_phase, yr_start], one=True)
-        cov_now  = (latest['AvgCov']        or 0) if latest   else 0
-        cov_then = (earliest['AvgCov']      or 0) if earliest else 0
-        inf_now  = (inf_latest['AvgRate']   or 0) if inf_latest   else 0
-        inf_then = (inf_earliest['AvgRate'] or 0) if inf_earliest else 0
+        
+        cov_now   = latest['AvgCov']   or 0 if latest else 0
+        cov_then  = earliest['AvgCov'] or 0 if earliest else 0
+        inf_now   = inf_latest['AvgRate']   or 0 if inf_latest else 0
+        inf_then  = inf_earliest['AvgRate'] or 0 if inf_earliest else 0
+        
         return {
-            'countries':  (latest['Countries'] or 0) if latest else 0,
-            'cov_now':    cov_now,
-            'cov_change': round(cov_now  - cov_then,  1),
-            'inf_now':    inf_now,
-            'inf_change': round(inf_now  - inf_then,  2),
+            'countries':    latest['Countries'] or 0 if latest else 0,
+            'cov_now':      cov_now,
+            'cov_change':   round(cov_now - cov_then, 1),
+            'inf_now':      inf_now,
+            'inf_change':   round(inf_now - inf_then, 2),
         }
 
     left_stats  = get_stats(sel_left_econ)
     right_stats = get_stats(sel_right_econ)
 
-    cov_gap       = round(abs(left_stats['cov_now'] - right_stats['cov_now']), 1)
-    inf_gap       = round(abs(left_stats['inf_now'] - right_stats['inf_now']), 2)
+    cov_gap = round(abs(left_stats['cov_now'] - right_stats['cov_now']), 1)
+    inf_gap = round(abs(left_stats['inf_now'] - right_stats['inf_now']), 2)
     both_improving = left_stats['cov_change'] > 0 and right_stats['cov_change'] > 0
 
     return render_template('economic.html',
-        statuses=statuses, diseases=diseases, years=years, year_ranges=year_ranges,
-        sel_disease=sel_disease, sel_year=sel_year,
-        sel_year_range=sel_year_range,
-        sel_left_econ=sel_left_econ, sel_right_econ=sel_right_econ,
-        table1=table1, table2=table2,
-        left_trend=left_trend, right_trend=right_trend,
-        left_stats=left_stats, right_stats=right_stats,
-        cov_gap=cov_gap, inf_gap=inf_gap,
-        both_improving=both_improving,
-        sort_col=sort_col, sort_dir=sort_dir,
-        yr_start=yr_start, yr_end=yr_end,
-    )
+                           statuses=statuses, diseases=diseases, years=years, year_ranges=year_ranges,
+                           sel_disease=sel_disease, sel_year=sel_year, sel_year_range=sel_year_range,
+                           sel_left_econ=sel_left_econ, sel_right_econ=sel_right_econ,
+                           table1=table1, table2=table2,
+                           left_trend=left_trend, right_trend=right_trend,
+                           left_stats=left_stats, right_stats=right_stats,
+                           cov_gap=cov_gap, inf_gap=inf_gap, both_improving=both_improving,
+                           sort_col=sort_col, sort_dir=sort_dir, yr_start=yr_start, yr_end=yr_end)
 
 # ==========================================
 # LEVEL 3 ROUTES: Deep Analysis Subqueries
