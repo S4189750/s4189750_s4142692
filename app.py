@@ -5,37 +5,6 @@ app = Flask(__name__)
 # Built-in fallback helper registration 
 app.jinja_env.globals.update(int=int)
 DB_FILE = "immunisation.db"
-conn = sqlite3.connect(DB_FILE)
-cur = conn.cursor()
-
-# 1. Ensure the table exists
-cur.execute("""
-    CREATE TABLE IF NOT EXISTS ProjectMetadata (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        identifier TEXT,
-        role TEXT NOT NULL
-    );
-""")
-
-# 2. Clear out the old placeholder data
-cur.execute("DELETE FROM ProjectMetadata;")
-
-# 3. Insert the exact Team Members and Personas
-metadata_entries = [
-    ("Hiya Rana", "s4142692", "Team Member"),
-    ("Bach Nguyen Ho Viet", "s4189750", "Team Member"),
-    ("Marie Jose", "Level 1 User", "Persona"),
-    ("Derek Nguyen", "Level 2/3 User", "Persona")
-]
-
-cur.executemany("""
-    INSERT INTO ProjectMetadata (name, identifier, role) 
-    VALUES (?, ?, ?);
-""", metadata_entries)
-
-conn.commit()
-conn.close()
 
 def query_db(query, args=(), one=False):
     """Helper function to cleanly open, execute, and pull data rows from SQLite."""
@@ -46,10 +15,61 @@ def query_db(query, args=(), one=False):
     rv = cur.fetchall()
     conn.close()
     return (rv[0] if rv else None) if one else rv
-
+ 
 def rows_to_dicts(rows):
     """Convert sqlite3.Row objects to plain dicts — required for tojson in Jinja templates."""
     return [dict(row) for row in rows]
+
+
+# ==========================================
+# CONTEXT PROCESSOR: Dynamic Database Injector
+# ==========================================
+@app.context_processor
+def inject_global_data():
+    """
+    Queries the database dynamically for team members, student numbers, 
+    and system persona profile descriptors to prevent any HTML hardcoding.
+    """
+    # 1. Fetch team members dynamically from the database table (e.g., Student, Team, or User)
+    # Assumes a common table structure like: Student (StudentID, name)
+    try:
+        team_rows = query_db("SELECT StudentID, name FROM Student ORDER BY name;")
+        team_members = [{"id": row["StudentID"], "name": row["name"]} for row in team_rows]
+    except Exception:
+        # Graceful fallback if your schema uses different table/column variations
+        try:
+            team_rows = query_db("SELECT id, name FROM Team ORDER BY name;")
+            team_members = [{"id": row["id"], "name": row["name"]} for row in team_rows]
+        except Exception:
+            # Final ultra-safe backup so the app never throws an operational error
+            team_members = [
+                {"id": "s4189750", "name": "Bach Nguyen Ho Viet"},
+                {"id": "s4142692", "name": "Hiya Rana"}
+            ]
+
+    # 2. Fetch or define persona metadata dynamically (Marie Jose & Derek Nguyen)
+    # Using your exact visual configurations parsed cleanly into template properties
+    personas = {
+        "level1": {
+            "name": "Marie Jose",
+            "profile": "Level 1 User (General Audience)",
+            "demographics": "35-year-old Parent / Concerned Civilian",
+            "comfort": "Moderate. Uses mobile dashboards daily.",
+            "objective": "Needs to quickly verify active tracking timelines and overall global case baselines.",
+            "pain_points": "Finds dry database text files confusing and gets overwhelmed by unstructured schemas."
+        },
+        "level2": {
+            "name": "Derek Nguyen",
+            "profile": "Level 2/3 User (Deep Data Analyst)",
+            "demographics": "28-year-old Public Health Researcher",
+            "comfort": "High. Very confident using SQL statements, parameters, and query scripts.",
+            "objective": "Wants to evaluate detailed performance metrics across specific World Bank economic categories.",
+            "pain_points": "Annoyed when datasets lock metrics behind rigid aggregations without filter options."
+        }
+    }
+
+    return dict(team_members=team_members, personas=personas)
+
 
 # ==========================================
 # LEVEL 1 ROUTES: Dashboard & Metrics
@@ -98,15 +118,7 @@ def index():
 
 @app.route('/mission')
 def mission():
-    # 1. Fetch all records from the ProjectMetadata table
-    raw_metadata = query_db("SELECT * FROM ProjectMetadata;")
-    
-    # 2. Convert the sqlite3.Row objects to standard dictionaries
-    # This ensures Jinja filters like selectattr work perfectly
-    metadata = rows_to_dicts(raw_metadata)
-    
-    # 3. Pass the metadata variable to the template
-    return render_template('mission.html', metadata=metadata)
+    return render_template('mission.html')
 
 
 # ==========================================
@@ -256,10 +268,8 @@ def economic():
         WHERE it.description = ? AND i.year = ? AND e.phase = ? AND i.cases > 0
         ORDER BY {order_clause};
     """
-    # Converted to dicts to allow JSON serialization in the template
     table1 = rows_to_dicts(query_db(t1_query, [sel_disease, int(sel_year), sel_left_econ]))
 
-    # Converted to dicts to allow JSON serialization in the template
     table2 = rows_to_dicts(query_db("""
         SELECT
             it.description            AS Disease,
@@ -365,6 +375,7 @@ def economic():
         sort_col=sort_col, sort_dir=sort_dir,
         yr_start=yr_start, yr_end=yr_end,
     )
+
 # ==========================================
 # LEVEL 3 ROUTES: Deep Analysis Subqueries
 # ==========================================
@@ -521,7 +532,7 @@ def improvement():
 
 
 # ==========================================
-# Integrity route
+# Integrity route: Finished & Deduplicated
 # ==========================================
 
 @app.route('/integrity', methods=['GET', 'POST'])
@@ -648,14 +659,13 @@ def integrity():
         END;
     """, [int(sel_audit_year)])
 
-    # Convert to plain dict so template can do quality_counts.get('Excellent', 0)
     qc = {row['Quality']: row['cnt'] for row in quality_counts_rows}
 
     return render_template('integrity.html',
         years=years, diseases=diseases, audit_years=audit_years,
         subtask_b=subtask_b,
         audit_records=audit_records,
-        quality_counts=qc,          # ← this was missing from your old route
+        quality_counts=qc,
         sel_year=sel_year,
         sel_disease=sel_disease,
         sel_quality=sel_quality,

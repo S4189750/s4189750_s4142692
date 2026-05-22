@@ -202,15 +202,6 @@
     margin-top: .6rem;
 }
 
-/* ── Zero-dose section ── */
-.zero-section {
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 1.4rem 1.6rem;
-    margin-bottom: 1.5rem;
-}
-.zero-section h2 { margin: 0 0 1rem; font-size: 1.05rem; font-weight: 800; color: #ea580c; }
 
 /* ── Region / econ pills ── */
 .pill {
@@ -237,7 +228,7 @@
 <!-- Hero -->
 <div class="ant-hero">
     <h1>Antigen &amp; Disease Deep-Dive</h1>
-    <p>Analyze vaccine-specific coverage trends and identify zero-dose populations</p>
+    <p>Analyze vaccine-specific coverage trends</p>
 </div>
 
 <div class="ant-body">
@@ -285,10 +276,7 @@
                     <div class="dstat-label">Global Coverage 2024</div>
                     <div class="dstat-value">{{ headline.GlobalCoverage | int if headline else '—' }}%</div>
                 </div>
-                <div class="dstat dstat-orange">
-                    <div class="dstat-label">Low-Coverage Countries</div>
-                    <div class="dstat-value">{{ headline.ZeroDoseCountries if headline else '—' }}</div>
-                </div>
+                
                 <div class="dstat dstat-purple">
                     <div class="dstat-label">Protected Against</div>
                     <div class="dstat-value">{{ a_protects }}</div>
@@ -309,6 +297,7 @@
             </div>
         </div>
 
+        
         <!-- ── Sub-Task A: Biggest Improvement in Vaccination Rates ── -->
         <div class="section-card">
             <h2>Sub-Task A — Countries with the Biggest Vaccination Rate Jump</h2>

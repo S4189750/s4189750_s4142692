@@ -1,12 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
 
-{% set team = metadata | selectattr("role", "equalto", "Team Member") | list %}
-{% set personas = metadata | selectattr("role", "equalto", "Persona") | list %}
-
-{% set p1_name = personas[0].name if personas|length > 0 else 'Marie Jose' %}
-{% set p2_name = personas[1].name if personas|length > 1 else 'Derek Nguyen' %}
-
 <style>
     .usage-section {
         background-color: #ffffff;
@@ -107,26 +101,26 @@
     
     <div class="personas-grid">
         <div class="persona-card box-pastel-pink">
-            <img src="{{ url_for('static', filename='images/marie.jpeg') }}" alt="{{ p1_name }}" class="persona-photo">
+            <img src="{{ url_for('static', filename='images/marie.jpeg') }}" alt="{{ personas.level1.name }}" class="persona-photo">
             <div class="persona-info">
-                <h3>{{ p1_name }}</h3>
-                <p><strong>System Profile:</strong> Level 1 User (General Audience)</p>
-                <p><strong>Demographics:</strong> 35-year-old Parent / Concerned Civilian</p>
-                <p><strong>Technical Comfort:</strong> Moderate. Uses mobile dashboards daily.</p>
-                <p><strong>Core Objective:</strong> Needs to quickly verify active tracking timelines and overall global case baselines.</p>
-                <p><strong>System Pain Points:</strong> Finds dry database text files confusing and gets overwhelmed by unstructured schemas.</p>
+                <h3>{{ personas.level1.name }}</h3>
+                <p><strong>System Profile:</strong> {{ personas.level1.profile }}</p>
+                <p><strong>Demographics:</strong> {{ personas.level1.demographics }}</p>
+                <p><strong>Technical Comfort:</strong> {{ personas.level1.comfort }}</p>
+                <p><strong>Core Objective:</strong> {{ personas.level1.objective }}</p>
+                <p><strong>System Pain Points:</strong> {{ personas.level1.pain_points }}</p>
             </div>
         </div>
 
         <div class="persona-card box-pastel-blue">
-            <img src="{{ url_for('static', filename='images/derek.jpeg') }}" alt="{{ p2_name }}" class="persona-photo">
+            <img src="{{ url_for('static', filename='images/derek.jpeg') }}" alt="{{ personas.level2.name }}" class="persona-photo">
             <div class="persona-info">
-                <h3>{{ p2_name }}</h3>
-                <p><strong>System Profile:</strong> Level 2/3 User (Deep Data Analyst)</p>
-                <p><strong>Demographics:</strong> 28-year-old Public Health Researcher</p>
-                <p><strong>Technical Comfort:</strong> High. Very confident using SQL statements, parameters, and query scripts.</p>
-                <p><strong>Core Objective:</strong> Wants to evaluate detailed performance metrics across specific World Bank economic categories.</p>
-                <p><strong>System Pain Points:</strong> Annoyed when datasets lock metrics behind rigid aggregations without filter options.</p>
+                <h3>{{ personas.level2.name }}</h3>
+                <p><strong>System Profile:</strong> {{ personas.level2.profile }}</p>
+                <p><strong>Demographics:</strong> {{ personas.level2.demographics }}</p>
+                <p><strong>Technical Comfort:</strong> {{ personas.level2.comfort }}</p>
+                <p><strong>Core Objective:</strong> {{ personas.level2.objective }}</p>
+                <p><strong>System Pain Points:</strong> {{ personas.level2.pain_points }}</p>
             </div>
         </div>
     </div>
@@ -136,14 +130,16 @@
     <h2 class="team-header"><strong>Team Members</strong></h2>
     
     <div class="team-grid">
-        {% for member in team %}
+        {% for member in team_members %}
         <div class="team-member">
-            {% if '4142692' in member.identifier %}
+            {% if '4142692' in member.id|string %}
                 <img src="{{ url_for('static', filename='images/hiya.jpeg') }}" alt="{{ member.name }}" class="team-photo">
-            {% elif '4189750' in member.identifier %}
+            {% elif '4189750' in member.id|string %}
                 <img src="{{ url_for('static', filename='images/bach.jpeg') }}" alt="{{ member.name }}" class="team-photo">
+            {% else %}
+                <img src="{{ url_for('static', filename='images/default.jpeg') }}" alt="{{ member.name }}" class="team-photo">
             {% endif %}
-            <div class="team-label">{{ member.name }} - {{ member.identifier }}</div>
+            <div class="team-label">{{ member.name }} - {{ member.id }}</div>
         </div>
         {% endfor %}
     </div>
