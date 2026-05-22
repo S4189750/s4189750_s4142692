@@ -6,6 +6,38 @@ app = Flask(__name__)
 app.jinja_env.globals.update(int=int)
 DB_FILE = "immunisation.db"
 
+conn = sqlite3.connect(DB_FILE)
+cur = conn.cursor()
+
+# 1. Ensure the table exists
+cur.execute("""
+    CREATE TABLE IF NOT EXISTS ProjectMetadata (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        identifier TEXT,
+        role TEXT NOT NULL
+    );
+""")
+
+# 2. Clear out the old placeholder data
+cur.execute("DELETE FROM ProjectMetadata;")
+
+# 3. Insert the exact Team Members and Personas
+metadata_entries = [
+    ("Hiya Rana", "s4142692", "Team Member"),
+    ("Bach Nguyen Ho Viet", "s4189750", "Team Member"),
+    ("Marie Jose", "Level 1 User", "Persona"),
+    ("Derek Nguyen", "Level 2/3 User", "Persona")
+]
+
+cur.executemany("""
+    INSERT INTO ProjectMetadata (name, identifier, role) 
+    VALUES (?, ?, ?);
+""", metadata_entries)
+
+conn.commit()
+conn.close()
+
 def query_db(query, args=(), one=False):
     """Helper function to cleanly open, execute, and pull data rows from SQLite."""
     conn = sqlite3.connect(DB_FILE)
@@ -15,7 +47,7 @@ def query_db(query, args=(), one=False):
     rv = cur.fetchall()
     conn.close()
     return (rv[0] if rv else None) if one else rv
-
+ 
 def rows_to_dicts(rows):
     """Convert sqlite3.Row objects to plain dicts — required for tojson in Jinja templates."""
     return [dict(row) for row in rows]
@@ -67,7 +99,14 @@ def index():
 
 @app.route('/mission')
 def mission():
-    return render_template('mission.html')
+    # Fetch all records from the metadata table
+    try:
+        metadata_rows = query_db("SELECT name, identifier, role FROM ProjectMetadata;")
+    except sqlite3.OperationalError:
+        # Fallback to empty list if the table hasn't been created yet
+        metadata_rows = []
+        
+    return render_template('mission.html', metadata=metadata_rows)
 
 
 # ==========================================
@@ -485,10 +524,6 @@ def improvement():
 # Integrity route: Finished & Deduplicated
 # ==========================================
 
-# ==========================================
-# REPLACE your entire /integrity route in app.py with this:
-# ==========================================
-
 @app.route('/integrity', methods=['GET', 'POST'])
 def integrity():
     years       = query_db("SELECT DISTINCT year AS Year FROM InfectionData ORDER BY year DESC;")
@@ -620,7 +655,7 @@ def integrity():
         years=years, diseases=diseases, audit_years=audit_years,
         subtask_b=subtask_b,
         audit_records=audit_records,
-        quality_counts=qc,          # ← this was missing from your old route
+        quality_counts=qc,
         sel_year=sel_year,
         sel_disease=sel_disease,
         sel_quality=sel_quality,
