@@ -3,8 +3,17 @@
 
 A Flask-based web application for exploring global vaccination coverage, infection trends, and public health data across 194 countries from 2000–2024.
 
-Team Members: Hiya Rana (s4142692) · Bach Nguyen Ho Viet (s4189750)
+## Declaration/References
+--- 
+This web app was made with the guidance of w3schools, geeksforgeeks, and Gemini AI. Gemini AI assisted code made it possible for the website to do exactly as our desired website.
+---
 
+## 👥 Team
+
+| Name | Student ID |
+|------|-----------|
+| Hiya Rana | s4142692 |
+| Bach Nguyen Ho Viet | s4189750 |
 ---
 
 ## 📋 Overview
@@ -45,6 +54,7 @@ project/
 
 ```bash
 git clone https://github.com/S4189750/s4189750_s4142692.git
+
 ```
 
 ### 2. Create a virtual environment (recommended)
@@ -132,58 +142,15 @@ The app queries the following tables in `immunisation.db`:
 
 ---
 
-## 📦 Requirements
-
-```
-Python 3.8+
-Flask
-```
-
-To generate a `requirements.txt`:
-
-```bash
-pip freeze > requirements.txt
-```
-
-Minimal version:
-
-```
-flask>=2.0
-```
-
----
-
 ## 🚀 Quick Start (one-liner)
 
 ```bash
-pip install flask && python app.py
+pip install flask && then input python app.py
 ```
-
 Then visit `http://127.0.0.1:5000`
-
----
-
-## 📸 Screenshots
-
-| Home Dashboard | Regional Analytics | Economic Trends |
-|---|---|---|
-| Stat cards, disease search | Herd immunity summary + sortable tables | Split-screen income comparison + charts |
-
-| Antigen Analytics | Data Integrity |
-|---|---|
-| Vaccination rate jump ranking | Global average vs above-average countries |
-
----
-
-## 👥 Team
-
-| Name | Student ID |
-|------|-----------|
-| Hiya Rana | s4142692 |
-| Bach Nguyen Ho Viet | s4189750 |
 
 ---
 
 ## 📄 License
 
-This project was created for academic purposes at UNSW Sydney. Not for commercial use.
+This project was created for academic purposes at RMIT University for their Python Programming Studio final assignment.

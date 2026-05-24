@@ -248,7 +248,7 @@ nav a:hover {
 .link-green { color: #16a34a; }
 .link-pink { color: #db2777; }
 
-/* Search Filter Module Elements */
+/* Search Filter Module Elements -MADE WITH THE HELP OF GEMINI AI*/
 .search-section {
     background-color: #f8fafc;
     border: 1px solid #e2e8f0;
@@ -398,7 +398,7 @@ nav a:hover {
 .team-grid {
     display: flex;
     justify-content: center; /* Centers the two members */
-    gap: 6rem; /* Space between you and your teammate */
+    gap: 6rem; /* Space between me and my teammate */
     margin-bottom: 5rem;
 }
 

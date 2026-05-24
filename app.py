@@ -30,13 +30,12 @@ def inject_global_data():
     Queries the database dynamically for team members, student numbers, 
     and system persona profile descriptors to prevent any HTML hardcoding.
     """
-    # 1. Fetch team members dynamically from the database table (e.g., Student, Team, or User)
-    # Assumes a common table structure like: Student (StudentID, name)
+    # 1. Fetch team members dynamically from the database table 
+    #  Table structure: Student (StudentID, name)
     try:
         team_rows = query_db("SELECT StudentID, name FROM Student ORDER BY name;")
         team_members = [{"id": row["StudentID"], "name": row["name"]} for row in team_rows]
     except Exception:
-        # Graceful fallback if your schema uses different table/column variations
         try:
             team_rows = query_db("SELECT id, name FROM Team ORDER BY name;")
             team_members = [{"id": row["id"], "name": row["name"]} for row in team_rows]
@@ -48,7 +47,7 @@ def inject_global_data():
             ]
 
     # 2. Fetch or define persona metadata dynamically (Marie Jose & Derek Nguyen)
-    # Using your exact visual configurations parsed cleanly into template properties
+    # Use our exact visual configurations parsed cleanly into template properties
     personas = {
         "level1": {
             "name": "Marie Jose",
@@ -71,9 +70,10 @@ def inject_global_data():
     return dict(team_members=team_members, personas=personas)
 
 
-# ==========================================
+# ====================================
 # LEVEL 1 ROUTES: Dashboard & Metrics
-# ==========================================
+# ====================================
+# <!-- ──THIS FEATURE WAS MADE WITH THE HELP OF GEMINI AI ── -->
 
 @app.route('/')
 def index():
@@ -147,7 +147,9 @@ def regional():
     t2_allowed  = {'AvgCoverage': 'AvgCoverage', 'CountriesAt90': 'CountriesAt90', 'RegionName': 'r.region'}
     t2_order    = f"{t2_allowed.get(t2_sort, 'AvgCoverage')} {t2_sort_dir}"
 
-    # ── TABLE 1 ──
+    # ── TABLE 1 ── 
+    # <!-- ──THESE TABLES WERE MADE WITH THE HELP OF GEMINI AI ── -->
+
     t1_query = f"""
         SELECT
             c.name                             AS CountryName,
@@ -194,7 +196,9 @@ def regional():
     t2_query += f" GROUP BY r.region, v.antigen, v.year ORDER BY {t2_order};"
     table2 = query_db(t2_query, t2_params)
 
-    # ── Sidebar Stats ──
+    # ── Sidebar Stats ── # 
+    # <!-- ──THIS SIDEBAR WAS MADE WITH THE HELP OF GEMINI AI ── -->
+
     stats_query = """
         SELECT
             ROUND(AVG(CAST(coverage AS REAL)), 1) AS AvgCoverage,
@@ -246,7 +250,9 @@ def economic():
     yr_start   = int(yr_parts[0])
     yr_end     = int(yr_parts[1])
 
-    # TABLE 1
+    # TABLE 1 
+    # <!-- ──THESE TABLES WERE MADE WITH THE HELP OF GEMINI AI ── -->
+
     sort_col = request.args.get('sort', 'CasesPer100k')
     sort_dir = request.args.get('dir',  'desc')
     allowed_sorts = {'Country','EconPhase','Year','Disease','CasesPer100k'}
@@ -307,13 +313,15 @@ def economic():
         ORDER BY v.year;
         """, [econ_phase, yr_start, yr_end])
 
-    # FIX: Run trends and directly transform the Row structures into plain JSON dictionaries
+    # Run trends and directly transform the Row structures into plain JSON dictionaries
     raw_left_trend  = get_trend(sel_left_econ)
     raw_right_trend = get_trend(sel_right_econ)
     left_trend      = [dict(row) for row in raw_left_trend]
     right_trend     = [dict(row) for row in raw_right_trend]
 
     # Summary stat cards calculation
+    # <!-- ──THIS FEATURE WAS MADE WITH THE HELP OF GEMINI AI ── -->
+
     def get_stats(econ_phase):
         latest = query_db("""
         SELECT ROUND(AVG(CAST(v.coverage AS REAL)),1) AS AvgCov, COUNT(DISTINCT v.country) AS Countries
@@ -331,7 +339,6 @@ def economic():
         WHERE  e.phase = ? AND v.year = ?;
         """, [econ_phase, yr_start], one=True)
         
-        # FIX: Added missing '*' operator for multiplication syntax rules
         inf_latest = query_db("""
         SELECT ROUND(AVG((i.cases * 100000.0)/cp.population),2) AS AvgRate
         FROM   InfectionData i
@@ -413,6 +420,7 @@ def improvement():
         sel_end     = '2024'
         limit_n     = '10'
         sort_by     = 'RateIncrease'
+# <!-- ──THIS FOLLOOWING PART WAS MADE WITH THE HELP OF GEMINI AI ── -->
 
     allowed_sorts = {'RateIncrease', 'Country', 'StartRate', 'EndRate'}
     if sort_by not in allowed_sorts:
@@ -460,6 +468,7 @@ def improvement():
           AND v.coverage != '' AND v.coverage IS NOT NULL
         GROUP BY v.antigen;
     """, [sel_antigen], one=True)
+# <!-- ──THIS FOLLOWING CODE REGARDING HISTORICAL AND ZERO DOSE DATA WAS MADE WITH THE HELP OF GEMINI AI ── -->
 
     historical = rows_to_dicts(query_db("""
         SELECT
@@ -559,6 +568,8 @@ def integrity():
         sel_audit_year = '2024'
         sort_col       = 'DiscrepancyPct'
         sort_dir       = 'asc'
+        
+# <!-- ──THIS SORTING WAS MADE WITH THE HELP OF GEMINI AI ── -->
 
     allowed_sorts = {'Country', 'Year', 'AvgCoverage', 'DiscrepancyPct', 'Quality'}
     if sort_col not in allowed_sorts:
@@ -566,6 +577,8 @@ def integrity():
     order_clause = f"{sort_col} {'DESC' if sort_dir == 'desc' else 'ASC'}"
 
     # ── SUB-TASK B: global row + above-average countries in one UNION query ──
+    # <!-- ──THIS FEATURE WAS MADE WITH THE HELP OF GEMINI AI ── -->
+
     subtask_b = query_db("""
         SELECT
             'Global'       AS Country,
@@ -606,6 +619,7 @@ def integrity():
           sel_disease, int(sel_year)])
 
     # ── AUDIT TABLE: coverage deviation from 100% target, quality tiered in SQL
+    # <!-- ──THIS FEATURE WAS MADE WITH THE HELP OF GEMINI AI ── -->
     quality_filter = ""
     audit_params   = [int(sel_audit_year)]
     if sel_quality:
@@ -642,6 +656,8 @@ def integrity():
     """, audit_params)
 
     # ── Quality summary counts for the 4 stat cards ───────────────────────────
+    # <!-- ──THIS FEATURE WAS MADE WITH THE HELP OF GEMINI AI ── -->
+
     quality_counts_rows = query_db("""
         SELECT Quality, COUNT(*) AS cnt FROM (
             SELECT CASE
